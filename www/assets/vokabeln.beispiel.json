@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "lektionen": [
+    {
+      "lektion": 1,
+      "vokabeln": [
+        {
+          "id": "L01-001",
+          "wortart": "verb",
+          "lemma": "venīre",
+          "formen": { "praesens_1sg": "veniō", "perfekt_1sg": "vēnī" },
+          "bedeutungen": [
+            { "text": "kommen", "typ": "muss" }
+          ]
+        },
+        {
+          "id": "L01-002",
+          "wortart": "verb",
+          "lemma": "vidēre",
+          "formen": { "praesens_1sg": "videō", "perfekt_1sg": "vīdī", "ppp": "vīsum" },
+          "bedeutungen": [
+            { "text": "sehen", "typ": "muss" },
+            { "text": "erblicken", "typ": "kann" }
+          ]
+        },
+        {
+          "id": "L01-003",
+          "wortart": "verb",
+          "lemma": "discere",
+          "formen": { "praesens_1sg": "discō", "perfekt_1sg": "didicī" },
+          "bedeutungen": [
+            { "text": "lernen", "typ": "muss" },
+            { "text": "erfahren", "typ": "kann" }
+          ],
+          "hinweis": "kein PPP"
+        },
+        {
+          "id": "L01-004",
+          "wortart": "verb",
+          "lemma": "esse",
+          "formen": { "praesens_1sg": "sum", "perfekt_1sg": "fuī" },
+          "bedeutungen": [
+            { "text": "sein", "typ": "muss" }
+          ],
+          "hinweis": "unregelmäßig"
+        },
+        {
+          "id": "L01-005",
+          "wortart": "sonstiges",
+          "lemma": "et",
+          "formen": {},
+          "bedeutungen": [
+            { "text": "und", "typ": "muss" },
+            { "text": "auch", "typ": "kann" }
+          ]
+        }
+      ]
+    },
+    {
+      "lektion": 2,
+      "vokabeln": [
+        {
+          "id": "L02-001",
+          "wortart": "substantiv",
+          "lemma": "discipulus/discipula",
+          "formen": { "genitiv_sg": "discipulī/discipulae", "genus": "m/f" },
+          "bedeutungen": [
+            { "text": "der Schüler/die Schülerin", "typ": "muss" }
+          ]
+        },
+        {
+          "id": "L02-002",
+          "wortart": "substantiv",
+          "lemma": "magister/magistra",
+          "formen": { "genitiv_sg": "magistrī/magistrae", "genus": "m/f" },
+          "bedeutungen": [
+            { "text": "der Lehrer/die Lehrerin", "typ": "muss" },
+            { "text": "der Meister/die Meisterin", "typ": "kann" }
+          ]
+        },
+        {
+          "id": "L02-003",
+          "wortart": "substantiv",
+          "lemma": "asinus",
+          "formen": { "genitiv_sg": "asinī", "genus": "m" },
+          "bedeutungen": [
+            { "text": "der Esel", "typ": "muss" },
+            { "text": "der Dummkopf", "typ": "kann" }
+          ]
+        },
+        {
+          "id": "L02-004",
+          "wortart": "adjektiv",
+          "lemma": "stultus",
+          "formen": { "f": "stulta", "n": "stultum" },
+          "bedeutungen": [
+            { "text": "dumm", "typ": "muss" },
+            { "text": "töricht", "typ": "kann" }
+          ],
+          "hinweis": "asinus stultus - der dumme Esel"
+        },
+        {
+          "id": "L02-005",
+          "wortart": "adjektiv",
+          "lemma": "magnus",
+          "formen": { "f": "magna", "n": "magnum" },
+          "bedeutungen": [
+            { "text": "groß", "typ": "muss" },
+            { "text": "bedeutend", "typ": "kann" }
+          ]
+        }
+      ]
+    }
+  ],
+  "inselwortschatz": []
+}

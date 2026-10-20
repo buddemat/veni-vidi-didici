@@ -1,0 +1,33 @@
+# --- Third-party material: never commit ---
+# Source material (scans, recordings, reports, import files)
+daten/
+# Actual vocabulary (the repository ships vokabeln.beispiel.json instead)
+www/assets/vokabeln.json
+# Screenshots containing vocabulary
+bugs/
+# APKs bundle the actual vocabulary
+APKs/
+*.apk
+*.aab
+# Audio processing tools (work only with the source recordings)
+tools/audio/
+# Tests that only apply to the actual vocabulary
+*.local.test.mjs
+
+# --- Not shared yet ---
+# CSV import tool
+tools/csv2json.js
+
+# --- Notes and docs: only the README is shared ---
+*.md
+!README.md
+
+# --- Dependencies, local settings ---
+node_modules/
+.claude/
+*.keystore
+*.jks
+.DS_Store
+android/.idea/
+*.swp
+*.swo

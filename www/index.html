@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>Veni Vidi Didici – Vokabeltrainer</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main>
+
+    <section id="start" class="screen aktiv">
+      <div class="screen-kopf">
+        <h2>Veni Vidi Didici – Vokabeltrainer</h2>
+      </div>
+      <div class="screen-inhalt start-inhalt">
+        <p class="begruessung" id="start-begruessung">Was möchtest du tun?</p>
+        <div class="knopf-liste">
+          <button class="primaer" id="start-lektionsauswahl-button">Vokabeln abfragen</button>
+        </div>
+        <div id="start-schnellstart" class="karte schnellstart">
+          <h3>Schnellstart</h3>
+          <div class="knopf-liste" id="start-schnellstart-knoepfe"></div>
+        </div>
+        <div class="start-fill"></div>
+        <div class="knopf-liste">
+          <button data-ziel="einstellungen">Einstellungen</button>
+          <button data-ziel="profil">Profil</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="lektionsauswahl" class="screen">
+      <div class="screen-kopf">
+        <button class="zurueck" data-ziel="start" aria-label="Zurück zum Start"><svg class="zurueck-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 4 L7 12 L15 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <h2>Lektion wählen</h2>
+      </div>
+      <div class="screen-inhalt">
+        <div id="lektionsauswahl-inhalt"></div>
+      </div>
+    </section>
+
+    <section id="abfrage" class="screen">
+      <div class="screen-kopf">
+        <button class="zurueck" id="abfrage-beenden-button" aria-label="Runde beenden"><svg class="zurueck-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 4 L7 12 L15 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <h2>Abfrage</h2>
+      </div>
+      <div class="screen-inhalt">
+        <div id="abfrage-inhalt"></div>
+      </div>
+    </section>
+
+    <section id="ergebnis" class="screen">
+      <div class="screen-kopf">
+        <h2>Ergebnis</h2>
+      </div>
+      <div class="screen-inhalt">
+        <div id="ergebnis-inhalt"></div>
+        <div class="knopf-liste">
+          <button class="primaer" id="ergebnis-nochmal-button">Nochmal abfragen</button>
+          <button data-ziel="start">Fertig</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="editor" class="screen">
+      <div class="screen-kopf">
+        <button class="zurueck" data-ziel="vokabelliste" aria-label="Zurück zur Vokabelliste"><svg class="zurueck-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 4 L7 12 L15 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <h2>Vokabel-Editor</h2>
+      </div>
+      <div class="screen-inhalt">
+        <div id="editor-inhalt"></div>
+      </div>
+    </section>
+
+    <section id="vokabelliste" class="screen">
+      <div class="screen-kopf">
+        <button class="zurueck" data-ziel="einstellungen" aria-label="Zurück zu den Einstellungen"><svg class="zurueck-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 4 L7 12 L15 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <h2>Vokabelliste</h2>
+      </div>
+      <div class="screen-inhalt">
+        <div class="knopf-liste">
+          <button class="primaer" id="vokabelliste-neu-button">+ Neue Vokabel anlegen</button>
+          <button id="wortschatz-export-button">Wortschatz exportieren</button>
+          <button id="wortschatz-import-button">Wortschatz importieren</button>
+        </div>
+        <input type="file" id="wortschatz-import-datei" accept="application/json" hidden>
+        <div id="vokabelliste-inhalt"></div>
+      </div>
+    </section>
+
+    <section id="einstellungen" class="screen">
+      <div class="screen-kopf">
+        <button class="zurueck" data-ziel="start" aria-label="Zurück zum Start"><svg class="zurueck-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 4 L7 12 L15 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <h2>Einstellungen</h2>
+      </div>
+      <div class="screen-inhalt">
+        <div id="einstellungen-inhalt"></div>
+        <div class="karte">
+          <h3>Wortschatz</h3>
+          <p class="hinweis">Vokabeln korrigieren, neu anlegen oder löschen; Wortschatz exportieren/importieren.</p>
+          <div class="knopf-liste">
+            <button id="einstellungen-vokabelliste-button">Vokabelliste bearbeiten</button>
+          </div>
+        </div>
+        <p class="hinweis app-version" id="einstellungen-version"></p>
+      </div>
+    </section>
+
+    <section id="profil" class="screen">
+      <div class="screen-kopf">
+        <button class="zurueck" data-ziel="start" aria-label="Zurück zum Start"><svg class="zurueck-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 4 L7 12 L15 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <h2>Profil</h2>
+      </div>
+      <div class="screen-inhalt">
+        <div class="karte">
+          <h3>Name</h3>
+          <input type="text" id="profil-name-eingabe" placeholder="Wie heißt du?">
+        </div>
+        <div class="karte">
+          <h3>Aktuelle Lektion</h3>
+          <p class="hinweis">
+            Für den Schnellstart „Neueste Lektion“. Automatisch ist das die höchste Lektion, die du schon geübt hast.
+          </p>
+          <label for="profil-lektion-auswahl">Lektion</label>
+          <select id="profil-lektion-auswahl"></select>
+          <div id="profil-bis-bereich" hidden>
+            <label for="profil-bis-auswahl">Bis zu welchem Wort?</label>
+            <select id="profil-bis-auswahl"></select>
+          </div>
+        </div>
+        <div class="karte">
+          <h3>Sichern &amp; übertragen</h3>
+          <p class="hinweis">
+            Enthält Name, Fortschritt und Einstellungen - für Gerätewechsel oder Sicherung.
+            Der Wortschatz selbst wird getrennt gesichert (Einstellungen › Vokabelliste).
+          </p>
+          <div class="knopf-liste">
+            <button id="profil-export-button">Profil exportieren</button>
+            <button id="profil-import-button">Profil importieren</button>
+          </div>
+        </div>
+        <input type="file" id="profil-import-datei" accept="application/json" hidden>
+      </div>
+    </section>
+
+  </main>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

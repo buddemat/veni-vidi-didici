@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VeniVidiDidici</string>
+    <string name="title_activity_main">VeniVidiDidici</string>
+    <string name="package_name">de.budde.venividididici</string>
+    <string name="custom_url_scheme">de.budde.venividididici</string>
+</resources>

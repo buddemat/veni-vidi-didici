@@ -1,0 +1,23 @@
+{
+  "name": "veni-vidi-didici",
+  "version": "0.9.0",
+  "description": "VeniVidiDidici - Latein-Vokabeltrainer (Capacitor + Vanilla HTML/CSS/JS)",
+  "private": true,
+  "scripts": {
+    "serve": "python3 tools/serve.py 8567",
+    "test": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON 'test/*.test.mjs'",
+    "version:sync": "node tools/version-sync.js",
+    "apk": "bash tools/apk.sh"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@capacitor-community/speech-recognition": "^7.0.1",
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/filesystem": "^8.1.3",
+    "@capacitor/share": "^8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2"
+  }
+}

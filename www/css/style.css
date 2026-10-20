@@ -1,0 +1,497 @@
+:root {
+  --farbe-hintergrund: #ffffff;
+  --farbe-flaeche: #f4f6f8;
+  --farbe-text: #1b1f24;
+  --farbe-text-schwach: #5b6570;
+  --farbe-akzent: #4a7d9c;
+  --farbe-akzent-dunkel: #335a71;
+  --farbe-richtig: #1e8a4c;
+  --farbe-richtig-hell: #dcefe3;
+  --farbe-falsch: #c62828;
+  --farbe-rueckfrage: #9a6a00;
+  --farbe-rand: #d7dce2;
+  /* Material-artige "tonal"-Fläche für normale Buttons: deutlich ruhiger als
+     ein knalliger Rahmen, aber trotzdem klar als Fläche/Knopf erkennbar -
+     abgeleitet aus der Akzentfarbe, nicht aus Grau. */
+  --farbe-knopf-tonal-hg: #e2ebf0;
+  --farbe-knopf-tonal-text: #335a71;
+  --schatten-1: 0 1px 2px rgba(20, 20, 40, 0.16), 0 1px 3px 1px rgba(20, 20, 40, 0.08);
+  --schatten-2: 0 1px 3px rgba(20, 20, 40, 0.2), 0 3px 8px rgba(20, 20, 40, 0.14);
+  --radius: 14px;
+  --radius-knopf: 100px;
+  --abstand: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 20px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+  /* App-Gerüst: body füllt den Bildschirm, main darin ist die einzige
+     scrollbare Fläche - fühlt sich nach App an (fester Kopfbereich pro
+     Screen), nicht nach Webseite (bei der alles inkl. Titel mitscrollt). */
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  min-height: 0;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen {
+  display: none;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.screen.aktiv {
+  display: flex;
+}
+
+.screen-kopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: max(12px, env(safe-area-inset-top, 0px)) var(--abstand) 12px;
+  background: var(--farbe-flaeche);
+  /* Leichte "Top-App-Bar"-Elevation statt einer harten Trennlinie - hebt den
+     Kopfbereich spürbar, aber dezent vom scrollenden Inhalt ab. */
+  box-shadow: 0 1px 4px rgba(20, 20, 40, 0.1);
+  position: relative;
+  z-index: 1;
+}
+
+.screen-inhalt {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--abstand);
+  padding-bottom: max(var(--abstand), env(safe-area-inset-bottom, 0px));
+}
+
+h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.karte {
+  background: #ffffff;
+  border-radius: var(--radius);
+  padding: var(--abstand);
+  margin-bottom: var(--abstand);
+  /* "Surface"-Karte mit leichter Elevation statt Rahmen - wirkt wie eine
+     eigenständige Fläche, nicht wie ein umrandetes Webformular-Feld. */
+  box-shadow: var(--schatten-1);
+}
+
+.knopf-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Material-artige "tonal"-Buttons: pillenförmig, randlos, gefüllte Fläche
+   statt Umriss, plus ein "State Layer" (::after) der beim Antippen kurz
+   aufhellt/abdunkelt - fühlt sich nach nativer App-Bedienung an statt nach
+   einem umrandeten HTML-Formular-Button. */
+button, .knopf {
+  position: relative;
+  overflow: hidden;
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.1px;
+  padding: 14px 22px;
+  border-radius: var(--radius-knopf);
+  border: none;
+  background: var(--farbe-knopf-tonal-hg);
+  color: var(--farbe-knopf-tonal-text);
+  cursor: pointer;
+  min-height: 48px;
+  transition: box-shadow 120ms ease, transform 80ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button::after, .knopf::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+button:active:not(:disabled)::after, .knopf:active:not(:disabled)::after {
+  opacity: 0.14;
+}
+
+button:active:not(:disabled), .knopf:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+button:disabled, .knopf:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.primaer {
+  background: var(--farbe-akzent);
+  color: #ffffff;
+  box-shadow: var(--schatten-1);
+}
+
+button.primaer:active:not(:disabled) {
+  box-shadow: none;
+}
+
+button.zurueck {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  color: var(--farbe-akzent);
+  padding: 0;
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.zurueck-icon {
+  display: block;
+}
+
+/* Formular-Beschriftungen und Auswahl-Zeilen (Radio/Checkbox) in
+   Hinweis-Größe - der geerbte Fließtext (20px) wäre größer als die
+   Karten-Überschriften darüber. */
+label, .einstellungen-zeile {
+  font-size: 0.95rem;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  margin-top: var(--abstand);
+}
+
+input[type="text"], input[type="number"], select {
+  width: 100%;
+  font-size: 1.05rem;
+  font-family: inherit;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--farbe-rand);
+  background: #ffffff;
+  color: var(--farbe-text);
+}
+
+/* Auswahlfelder in derselben Größe wie ihre Beschriftungen und die
+   Radio-/Checkbox-Zeilen; Texteingaben (v.a. das Antwortfeld) bleiben
+   zum Tippen größer. */
+select {
+  font-size: 0.95rem;
+}
+
+input[type="text"]:focus, select:focus {
+  outline: 3px solid var(--farbe-akzent);
+  outline-offset: 1px;
+}
+
+.hinweis {
+  color: var(--farbe-text-schwach);
+  font-size: 0.95rem;
+}
+
+.richtig {
+  color: var(--farbe-richtig);
+  font-weight: 600;
+}
+
+.falsch {
+  color: var(--farbe-falsch);
+  font-weight: 600;
+}
+
+.rueckfrage {
+  color: var(--farbe-rueckfrage);
+  font-weight: 600;
+}
+
+.einstellungen-zeile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 400;
+  margin: 0 0 12px 0;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.einstellungen-zeile input[type="checkbox"],
+.einstellungen-zeile input[type="radio"] {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  accent-color: var(--farbe-akzent);
+}
+
+.start-inhalt {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.start-fill {
+  flex: 1;
+}
+
+/* Begrüßung auf der Startseite - als Titel, nicht als Hinweistext. */
+.begruessung {
+  font-size: 1.3rem;
+  font-weight: 500;
+  margin: 4px 0 16px;
+}
+
+/* Schnellstart-Gruppe unter "Vokabeln abfragen" als eigene Karte (wie die
+   Gruppen auf den anderen Screens), etwas kleinere Knöpfe, damit sie
+   optisch dem Haupt-Knopf untergeordnet bleiben. */
+.schnellstart {
+  margin: 16px 0 0;
+}
+
+.schnellstart button {
+  font-size: 0.98rem;
+  min-height: 44px;
+  padding: 10px 18px;
+}
+
+.start-inhalt > .knopf-liste ~ .knopf-liste {
+  margin-top: 12px;
+}
+
+/* Überschrift eines Abschnitts aus mehreren Karten (z.B. "Abgefragte
+   Formen" in den Einstellungen) - steht außerhalb der Karten. */
+.abschnitt-titel {
+  margin: 24px 0 4px;
+  font-size: 1.1rem;
+}
+
+.abschnitt-titel + .hinweis {
+  margin-top: 0;
+}
+
+.karte h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+#vokabelliste .knopf-liste {
+  margin-bottom: var(--abstand);
+}
+
+.vokabel-zeile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--farbe-rand);
+  font-size: 0.95rem;
+}
+
+/* Wort nimmt den Platz, die Icon-Knöpfe stehen rechts in festen Spalten
+   (immer untereinander ausgerichtet, egal wie lang das Wort ist). */
+.vokabel-zeile-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.vokabel-zeile-wortart {
+  color: var(--farbe-text-schwach);
+}
+
+.vokabel-zeile:last-child {
+  border-bottom: none;
+}
+
+.vokabel-zeile button.icon-knopf {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  min-height: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-knopf.loeschen {
+  color: var(--farbe-falsch);
+}
+
+.bedeutung-zeile {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.bedeutung-zeile input {
+  flex: 1;
+}
+
+.bedeutung-entfernen {
+  padding: 0;
+  width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.eingabe-mit-mikrofon {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.eingabe-mit-mikrofon input {
+  flex: 1;
+  min-width: 0;
+}
+
+.mikrofon-knopf {
+  padding: 0;
+  width: 48px;
+  min-height: 48px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.mikrofon-knopf.nimmt-auf {
+  background: var(--farbe-falsch);
+  color: #ffffff;
+  animation: mikrofon-pulsieren 1s ease-in-out infinite;
+}
+
+@keyframes mikrofon-pulsieren {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+details summary {
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding: 10px 4px;
+  cursor: pointer;
+}
+
+details .karte {
+  margin-top: 0;
+}
+
+.abfrage-lemma {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 28px var(--abstand);
+}
+
+.checkbox-liste {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--farbe-rand);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: #ffffff;
+}
+
+/* Versionsanzeige ganz unten in den Einstellungen. */
+.app-version {
+  text-align: center;
+  margin: 8px 0 24px;
+}
+
+/* Fortschrittsbalken in Abfrage und Ergebnis: Text in normaler Schrift-
+   farbe, Füllung auf einer helleren Spur derselben Farbe. */
+.fortschritt {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: var(--abstand);
+}
+
+.fortschritt-kopf {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--farbe-text-schwach);
+  margin-bottom: 4px;
+}
+
+.fortschritt-kopf span:last-child {
+  font-variant-numeric: tabular-nums;
+}
+
+.fortschritt-spur {
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--farbe-knopf-tonal-hg);
+}
+
+.fortschritt-fuellung {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--farbe-akzent);
+  transition: width 200ms ease;
+}
+
+.fortschritt-richtig .fortschritt-spur {
+  background: var(--farbe-richtig-hell);
+}
+
+.fortschritt-richtig .fortschritt-fuellung {
+  background: var(--farbe-richtig);
+}
+
+/* "Prüfen"/"Weiter" in der Abfrage: schmal (nicht volle Breite) und
+   mittig unter den ebenfalls zentrierten Karten. */
+#abfrage-inhalt > button:not([hidden]) {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  min-width: 140px;
+}
+
+/* Lern-Hinweis unter der Lösung (z.B. "Hinweis: Deponens"). */
+.loesung-hinweis {
+  margin-top: 4px;
+  font-style: italic;
+}
