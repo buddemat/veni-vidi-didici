@@ -4,16 +4,18 @@ import { zeigeScreen } from './screens.js';
 import { abfrageLabel } from './einstellungen.js';
 import { pruefeAntwort, normalisiere, aktiveAbfrageFelder } from './pruefung.js';
 import { mitMikrofon } from './spracheingabe.js';
+import { baueStapel, wiederEinreihen } from './ziehung.js';
 
 const GENUS_TEXT = { m: 'Maskulinum (m)', f: 'Femininum (f)', n: 'Neutrum (n)' };
-
-// Leitner-Gewichte je Level (Index 0 = Level 1 ... Index 4 = Level 5),
-// fallend mit steigendem Level - siehe Simulation aus dem vorherigen Chat.
-const LEITNER_GEWICHTE = [8, 4, 2, 1, 0.5];
 
 // Für den gleichverteilten Modus: Warteschlange, die per Zufall gemischt und
 // leergezogen wird; ist sie leer, wird der Pool neu gemischt nachgefüllt.
 let warteschlange = [];
+
+// Für den gewichteten Modus: Stapel, der von vorne abgearbeitet wird (siehe
+// ziehung.js). Der erste Stapel einer Runde enthält jede Vokabel genau einmal.
+let gewichteterStapel = [];
+let ersterDurchgang = true;
 
 // Nur zu Testzwecken (Konsole): wie oft wurde jede Vokabel bisher gezogen,
 // um die Verteilung der beiden Modi beobachten zu können.
@@ -46,23 +48,11 @@ function ziehGleichverteilt(pool) {
 }
 
 function ziehGewichtet(pool) {
-  const fortschritt = getStore().fortschritt;
-  const gewichte = pool.map(id => {
-    const level = fortschritt[id]?.level || 1;
-    const basisGewicht = LEITNER_GEWICHTE[Math.min(Math.max(level, 1), 5) - 1];
-    // Vokabeln, die zuletzt Rückfragen brauchten, gelten als schwächer
-    // sitzend, auch wenn die Runde am Ende richtig war (Plan Punkt 9) -
-    // pro nötiger Rückfrage einen moderaten Aufschlag aufs Grundgewicht.
-    const rueckfragenBonus = fortschritt[id]?.rueckfragen || 0;
-    return basisGewicht + rueckfragenBonus;
-  });
-  const gesamtgewicht = gewichte.reduce((summe, w) => summe + w, 0);
-  let zufallswert = Math.random() * gesamtgewicht;
-  for (let i = 0; i < pool.length; i++) {
-    zufallswert -= gewichte[i];
-    if (zufallswert <= 0) return pool[i];
+  if (gewichteterStapel.length === 0) {
+    gewichteterStapel = baueStapel(pool, getStore().fortschritt, { ersterDurchgang, zuletztId: aktuelleVokabelId });
+    ersterDurchgang = false;
   }
-  return pool[pool.length - 1];
+  return gewichteterStapel.shift();
 }
 
 function ziehNaechsteVokabelId() {
@@ -380,6 +370,8 @@ function antwortPruefen(
   } else {
     statistik.falsch++;
     statistik.fehler.push({ vokabel, abfrageFelder, ergebnis });
+    // Falsch beantwortet: im gewichteten Modus ein paar Karten später nochmal.
+    if (getAktuellenAbfrageModus() === 'gewichtet') wiederEinreihen(gewichteterStapel, aktuelleVokabelId);
   }
 
   console.log(`Antwort zu "${vokabel.lemma}":`, rohtext, '→', ergebnis);
@@ -549,6 +541,9 @@ function naechsteKarte() {
 
 export function starteAbfrage() {
   warteschlange = [];
+  gewichteterStapel = [];
+  ersterDurchgang = true;
+  aktuelleVokabelId = null;
   ziehungenProId = {};
   statistik = neueStatistik();
   naechsteKarte();
