@@ -346,8 +346,14 @@ test('slash between single words: every full expression is accepted', () => {
   for (const bedeutung of ['sei gegrüßt', 'seid gegrüßt!', 'sei gegrüßt, seid gegrüßt', 'sei/seid gegrüßt!']) {
     assert.equal(pruefeAntwort(salve, [], `salve, ${bedeutung}`).richtig, true, bedeutung);
   }
-  assert.deepEqual(sollVarianten('die linke Hand/Seite').filter(v => v.includes(' ')).sort(),
+  // One side alone is incomplete and does not count.
+  for (const bedeutung of ['sei', 'seid gegrüßt, sei']) {
+    assert.equal(pruefeAntwort(salve, [], `salve, ${bedeutung}`).richtig, false, bedeutung);
+  }
+  assert.deepEqual(sollVarianten('die linke Hand/Seite').sort(),
     ['die linke Hand', 'die linke Hand/Seite', 'die linke Seite']);
+  // Left side ends with "!"/"?": both sides are complete exclamations.
+  assert.deepEqual(sollVarianten('sieh da!/seht!').sort(), ['seht!', 'sieh da!', 'sieh da!/seht!']);
   // Both sides several words: already complete alternatives, nothing mixed.
   assert.deepEqual(sollVarianten('der Diener/die Dienerin').sort(),
     ['der Diener', 'der Diener/die Dienerin', 'die Dienerin']);
@@ -367,6 +373,7 @@ test('every meaning with a slash is accepted with each full expression', () => {
       if (b.text.startsWith('der/die ')) return;
       const seiten = b.text.split('/');
       if (seiten.length !== 2) return;
+      if (/[!?]$/.test(seiten[0].trim())) return;
       const [links, rechts] = seiten.map(s => s.trim().split(/\s+/));
       let ausdruecke;
       if (links.length === 1 && rechts.length > 1) ausdruecke = [[links[0], ...rechts.slice(1)], rechts];

@@ -312,11 +312,11 @@ export function sollVarianten(text, praefixPruefungAktiv = false) {
   for (const variante of klammerVarianten(text, praefixPruefungAktiv)) varianten.add(variante);
   if (text.includes('/')) {
     const seiten = text.split('/').map(s => s.trim()).filter(Boolean);
-    for (const seite of seiten) {
+    // Bei "/" zwischen einzelnen Wörtern zählen nur die ganzen Ausdrücke,
+    // nicht eine Seite allein ("sei" bei "sei/seid gegrüßt!").
+    const ausdruecke = wortAlternativen(seiten);
+    for (const seite of ausdruecke.length > 0 ? ausdruecke : seiten) {
       for (const variante of klammerVarianten(seite, praefixPruefungAktiv)) varianten.add(variante);
-    }
-    for (const ausdruck of wortAlternativen(seiten)) {
-      for (const variante of klammerVarianten(ausdruck, praefixPruefungAktiv)) varianten.add(variante);
     }
   }
   return [...varianten];
@@ -324,13 +324,14 @@ export function sollVarianten(text, praefixPruefungAktiv = false) {
 
 // Steht der "/" nur zwischen zwei einzelnen Wörtern eines längeren Ausdrucks
 // ("Sei/seid gegrüßt!", "die linke Hand/Seite"), ist jede Seite für sich
-// unvollständig - gemeint ist der ganze Ausdruck mit dem einen oder dem
-// anderen Wort: "Sei gegrüßt!" und "seid gegrüßt!". Erkennbar daran, dass
+// unvollständig (und zählt allein nicht) - gemeint ist der ganze Ausdruck
+// mit dem einen oder dem anderen Wort: "Sei gegrüßt!" und "seid gegrüßt!". Erkennbar daran, dass
 // genau eine Seite ein einzelnes Wort ist; sind beide Seiten mehrere Wörter
-// ("der Diener/die Dienerin"), sind es schon vollständige Alternativen.
+// ("der Diener/die Dienerin"), sind es schon vollständige Alternativen -
+// genauso, wenn die linke Seite mit "!"/"?" endet ("sieh da!/seht!").
 // Nur bei genau einem "/".
 function wortAlternativen(seiten) {
-  if (seiten.length !== 2) return [];
+  if (seiten.length !== 2 || /[!?]$/.test(seiten[0])) return [];
   const [links, rechts] = seiten.map(s => s.split(/\s+/));
   if (links.length === 1 && rechts.length > 1) {
     return [[links[0], ...rechts.slice(1)].join(' '), rechts.join(' ')];
