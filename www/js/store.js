@@ -22,6 +22,9 @@ function standardEinstellungen() {
     rueckfragen_aktiv: false,
     // Kleine Tippfehler (z.B. vocare/vokare) trotzdem als richtig werten.
     tippfehlertoleranz_aktiv: true,
+    // Nach einer falschen Antwort einen Button "Als richtig werten" zeigen
+    // (für Antworten, die nur an Komma, Tippfehler o.Ä. gescheitert sind).
+    als_richtig_werten_aktiv: false,
   };
 }
 
@@ -164,6 +167,15 @@ export function aktualisiereFortschritt(vokabelId, richtig, rueckfragenAnzahl = 
   aktuellerStore.fortschritt[vokabelId] = eintrag;
   persistStore();
   return eintrag;
+}
+
+// Setzt den Fortschritt einer Vokabel auf einen früheren Stand zurück
+// (null/undefined = Eintrag gab es vorher nicht) - für "Als richtig werten",
+// damit die vorherige Falsch-Wertung keine Spuren hinterlässt.
+export function stelleFortschrittWiederHer(vokabelId, eintrag) {
+  if (eintrag) aktuellerStore.fortschritt[vokabelId] = { ...eintrag };
+  else delete aktuellerStore.fortschritt[vokabelId];
+  persistStore();
 }
 
 // --- Export/Import: Profil (Fortschritt + Einstellungen) und Wortschatz

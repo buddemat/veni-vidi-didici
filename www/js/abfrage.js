@@ -1,4 +1,4 @@
-import { getStore, aktualisiereFortschritt } from './store.js';
+import { getStore, aktualisiereFortschritt, stelleFortschrittWiederHer } from './store.js';
 import { getAktuellenPool, getAktuellenAbfrageModus, getAktuellesRundenende } from './lektionsauswahl.js';
 import { zeigeScreen } from './screens.js';
 import { abfrageLabel } from './einstellungen.js';
@@ -151,7 +151,24 @@ function loesungsElement(vokabel, abfrageFelder, ergebnis) {
   return container;
 }
 
-function ergebnisAnzeigen(container, vokabel, abfrageFelder, ergebnis) {
+// "Als richtig werten": macht die Falsch-Wertung der aktuellen Karte
+// vollständig rückgängig (Fortschritt, Rundenstatistik, erneutes Einreihen)
+// und wertet sie stattdessen als richtig.
+function alsRichtigWerten(falschWertung) {
+  stelleFortschrittWiederHer(aktuelleVokabelId, falschWertung.fortschrittVorher);
+  aktualisiereFortschritt(aktuelleVokabelId, true, rueckfrageZaehler);
+
+  statistik.falsch--;
+  statistik.fehler.pop();
+  statistik.richtig++;
+  statistik.richtigeIds.add(aktuelleVokabelId);
+
+  if (falschWertung.einreihPosition >= 0) gewichteterStapel.splice(falschWertung.einreihPosition, 1);
+
+  aktualisiereFortschrittsAnzeige();
+}
+
+function ergebnisAnzeigen(container, vokabel, abfrageFelder, ergebnis, falschWertung = null) {
   const ergebnisKarte = document.createElement('div');
   ergebnisKarte.className = 'karte';
 
@@ -172,11 +189,29 @@ function ergebnisAnzeigen(container, vokabel, abfrageFelder, ergebnis) {
 
   container.appendChild(ergebnisKarte);
 
+  const knoepfe = document.createElement('div');
+  knoepfe.className = 'abfrage-knoepfe';
+
   const weiterButton = document.createElement('button');
   weiterButton.className = 'primaer';
   weiterButton.textContent = 'Weiter';
   weiterButton.addEventListener('click', naechsteKarte);
-  container.appendChild(weiterButton);
+
+  if (falschWertung && getStore().einstellungen.als_richtig_werten_aktiv) {
+    const richtigButton = document.createElement('button');
+    richtigButton.textContent = 'Als richtig werten';
+    richtigButton.addEventListener('click', () => {
+      alsRichtigWerten(falschWertung);
+      status.className = 'richtig';
+      status.textContent = 'Als richtig gewertet.';
+      richtigButton.remove();
+      weiterButton.focus();
+    });
+    knoepfe.appendChild(richtigButton);
+  }
+
+  knoepfe.appendChild(weiterButton);
+  container.appendChild(knoepfe);
   // Fokus auf "Weiter", damit Enter (Browser, Hardware-Tastatur) direkt zur
   // nächsten Vokabel führt - genauso wie Enter im Antwortfeld "Prüfen" auslöst.
   weiterButton.focus();
@@ -362,6 +397,13 @@ function antwortPruefen(
     }
   }
 
+  // Stand vor der Wertung merken, damit "Als richtig werten" eine
+  // Falsch-Wertung spurlos rückgängig machen kann.
+  const fortschrittVorher = getStore().fortschritt[aktuelleVokabelId];
+  const falschWertung = ergebnis.richtig ? null : {
+    fortschrittVorher: fortschrittVorher && { ...fortschrittVorher },
+    einreihPosition: -1,
+  };
   aktualisiereFortschritt(aktuelleVokabelId, ergebnis.richtig, rueckfrageZaehler);
 
   if (ergebnis.richtig) {
@@ -371,13 +413,15 @@ function antwortPruefen(
     statistik.falsch++;
     statistik.fehler.push({ vokabel, abfrageFelder, ergebnis });
     // Falsch beantwortet: im gewichteten Modus ein paar Karten später nochmal.
-    if (getAktuellenAbfrageModus() === 'gewichtet') wiederEinreihen(gewichteterStapel, aktuelleVokabelId);
+    if (getAktuellenAbfrageModus() === 'gewichtet') {
+      falschWertung.einreihPosition = wiederEinreihen(gewichteterStapel, aktuelleVokabelId);
+    }
   }
 
   console.log(`Antwort zu "${vokabel.lemma}":`, rohtext, '→', ergebnis);
 
   aktualisiereFortschrittsAnzeige();
-  ergebnisAnzeigen(container, vokabel, abfrageFelder, ergebnis);
+  ergebnisAnzeigen(container, vokabel, abfrageFelder, ergebnis, falschWertung);
 }
 
 // Kurzer Fortschritts-Hinweis oben auf jeder Abfrageseite - in allen drei

@@ -490,6 +490,19 @@ details .karte {
   min-width: 140px;
 }
 
+/* Knopfreihe nach dem Prüfen ("Als richtig werten" + "Weiter"): mittig,
+   bricht auf schmalen Bildschirmen um. */
+.abfrage-knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.abfrage-knoepfe button {
+  min-width: 140px;
+}
+
 /* Lern-Hinweis unter der Lösung (z.B. "Hinweis: Deponens"). */
 .loesung-hinweis {
   margin-top: 4px;

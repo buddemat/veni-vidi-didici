@@ -71,7 +71,7 @@ test('the last word asked is not first in the next deck', () => {
 
 test('wrong word comes back after a few other cards', () => {
   const stapel = ['b', 'c', 'd', 'e', 'f'];
-  wiederEinreihen(stapel, 'a', 3);
+  assert.equal(wiederEinreihen(stapel, 'a', 3), 3);
   assert.deepEqual(stapel, ['b', 'c', 'd', 'a', 'e', 'f']);
   const kurz = ['b'];
   wiederEinreihen(kurz, 'a', 3);
@@ -81,7 +81,7 @@ test('wrong word comes back after a few other cards', () => {
   assert.deepEqual(leer, ['a']);
   // already coming up soon: not added twice
   const bald = ['b', 'a', 'c', 'd'];
-  wiederEinreihen(bald, 'a', 3);
+  assert.equal(wiederEinreihen(bald, 'a', 3), -1);
   assert.deepEqual(bald, ['b', 'a', 'c', 'd']);
 });
 

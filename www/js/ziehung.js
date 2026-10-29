@@ -58,8 +58,12 @@ export function baueStapel(pool, fortschritt, { ersterDurchgang, zuletztId = nul
 // Reiht eine (gerade falsch beantwortete) Vokabel erneut ein, sodass
 // vorher noch `abstand` andere Karten drankommen - oder ans Ende, wenn der
 // Stapel kürzer ist. Ein bereits weiter vorne liegender Eintrag derselben
-// Vokabel bleibt bestehen (sie kommt dann eben früher).
+// Vokabel bleibt bestehen (sie kommt dann eben früher). Gibt die Position
+// des neuen Eintrags zurück (oder -1, wenn nichts eingefügt wurde), damit
+// "Als richtig werten" das Einreihen rückgängig machen kann.
 export function wiederEinreihen(stapel, id, abstand = WIEDERHOLUNGS_ABSTAND) {
-  if (stapel.slice(0, abstand + 1).includes(id)) return;
-  stapel.splice(Math.min(abstand, stapel.length), 0, id);
+  if (stapel.slice(0, abstand + 1).includes(id)) return -1;
+  const position = Math.min(abstand, stapel.length);
+  stapel.splice(position, 0, id);
+  return position;
 }
