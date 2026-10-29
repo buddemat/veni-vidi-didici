@@ -3,19 +3,19 @@ import { getStore, persistStore } from './store.js';
 const FELD_DEFINITIONEN = {
   substantiv: [
     { key: 'genus', label: 'Genus (m/f/n)' },
-    { key: 'genitiv_sg', label: 'Genitiv' },
-    { key: 'genitiv_pl', label: 'Genitiv Plural (wo angegeben)' },
+    { key: 'genitiv_sg', label: 'Genitiv', frage: 'der Genitiv Singular' },
+    { key: 'genitiv_pl', label: 'Genitiv Plural (wo angegeben)', frage: 'der Genitiv Plural' },
   ],
   verb: [
-    { key: 'praesens_1sg', label: 'Präsens (1. Person Singular)' },
-    { key: 'perfekt_1sg', label: 'Perfekt (1. Person Singular)' },
-    { key: 'ppp', label: 'PPP / Supin' },
-    { key: 'imperativ_sg', label: 'Imperativ Singular (wo angegeben)' },
+    { key: 'praesens_1sg', label: 'Präsens (1. Person Singular)', frage: 'die 1.P.Sg. Präsens' },
+    { key: 'perfekt_1sg', label: 'Perfekt (1. Person Singular)', frage: 'die 1.P.Sg. Perfekt' },
+    { key: 'ppp', label: 'PPP / Supin', frage: 'das PPP bzw. Supin' },
+    { key: 'imperativ_sg', label: 'Imperativ Singular (wo angegeben)', frage: 'der Imperativ Singular' },
   ],
   adjektiv: [
-    { key: 'f', label: 'Femininum-Form' },
-    { key: 'n', label: 'Neutrum-Form' },
-    { key: 'genitiv', label: 'Genitiv (bei einendigen Adjektiven)' },
+    { key: 'f', label: 'Femininum-Form', frage: 'die Femininum-Form' },
+    { key: 'n', label: 'Neutrum-Form', frage: 'die Neutrum-Form' },
+    { key: 'genitiv', label: 'Genitiv (bei einendigen Adjektiven)', frage: 'der Genitiv Singular' },
   ],
 };
 
@@ -29,6 +29,15 @@ export function feldLabel(wortart, feldKey) {
 // "Genitiv Plural (wo angegeben)".
 export function abfrageLabel(wortart, feldKey) {
   return feldLabel(wortart, feldKey).replace(/\s*\([^)]*\)/g, '');
+}
+
+// Für die Rückfrage "Und wie lautet …?": eigene Formulierung (`frage`) mit
+// Artikel und eindeutig ("die 1.P.Sg. Präsens", "der Genitiv Singular") -
+// die Kurzform allein ("Präsens", "Genitiv") ist dort zu knapp. Fallback
+// auf die Kurzform für Felder ohne `frage`.
+export function rueckfrageLabel(wortart, feldKey) {
+  const eintrag = (FELD_DEFINITIONEN[wortart] || []).find(f => f.key === feldKey);
+  return eintrag?.frage || abfrageLabel(wortart, feldKey);
 }
 
 // Alle Formfelder einer Wortart (nicht nur die aktuell abgefragten) - wird

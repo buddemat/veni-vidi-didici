@@ -1,7 +1,7 @@
 import { getStore, aktualisiereFortschritt, stelleFortschrittWiederHer } from './store.js';
 import { getAktuellenPool, getAktuellenAbfrageModus, getAktuellesRundenende } from './lektionsauswahl.js';
 import { zeigeScreen } from './screens.js';
-import { abfrageLabel } from './einstellungen.js';
+import { abfrageLabel, rueckfrageLabel } from './einstellungen.js';
 import { pruefeAntwort, normalisiere, aktiveAbfrageFelder } from './pruefung.js';
 import { mitMikrofon } from './spracheingabe.js';
 import { baueStapel, wiederEinreihen } from './ziehung.js';
@@ -237,7 +237,7 @@ function ermittleFehlendeEintraege(vokabel, abfrageFelder, ergebnis) {
     if (!e.ok && e.erkannt !== null) return [];
     if (!e.ok) {
       const label = abfrageLabel(vokabel.wortart, feldKey);
-      eintraege.push({ label, frage: `Und wie lautet ${label}?` });
+      eintraege.push({ label, frage: `Und wie lautet ${rueckfrageLabel(vokabel.wortart, feldKey)}?` });
     }
   }
 
