@@ -241,6 +241,12 @@ function ermittleFehlendeEintraege(vokabel, abfrageFelder, ergebnis) {
     }
   }
 
+  // "Und was bedeutet es noch?" nur, wenn schon eine Bedeutung genannt (oder
+  // weiter vorne in dieser Liste erfragt) wurde - sonst "Und was bedeutet es?".
+  // Auch eine Bedeutung, der nur der Artikel fehlt, zählt als genannt.
+  let bedeutungGenannt = [...ergebnis.bedeutungErgebnisse, ...ergebnis.kannBedeutungErgebnisse]
+    .some(e => e.ok || e.fehltNurArtikel);
+
   for (const e of ergebnis.bedeutungErgebnisse) {
     if (!e.ok && e.erkannt !== null) return [];
     if (!e.ok) {
@@ -270,9 +276,12 @@ function ermittleFehlendeEintraege(vokabel, abfrageFelder, ergebnis) {
           // erkannt, weil sie den Tippfehler "Sonde" nicht enthält.
           korrektesWort,
         });
-      } else {
+      } else if (bedeutungGenannt) {
         eintraege.push({ label: 'eine weitere Bedeutung', frage: 'Und was bedeutet es noch?' });
+      } else {
+        eintraege.push({ label: 'eine Bedeutung', frage: 'Und was bedeutet es?' });
       }
+      bedeutungGenannt = true;
     }
   }
 
