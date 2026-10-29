@@ -276,6 +276,11 @@ function klammerVarianten(text, praefixPruefungAktiv) {
     }
   }
 
+  // Und wörtlich wie im Buch, mit Klammern ("(be)grüßen", "der (Haus-)Herr")
+  // - normalisiere() lässt Klammern stehen, die getippte Buch-Notation passt
+  // also genau auf diese Variante.
+  varianten.add(bereinigen(text));
+
   return [...varianten];
 }
 

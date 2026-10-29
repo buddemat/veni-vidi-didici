@@ -303,3 +303,35 @@ test('āiō/ait: required and optional parts containing commas are matched corre
   assert.equal(pruefeAntwort(aio, [], 'aio, ich sage, behaupte').richtig, false);
   assert.equal(pruefeAntwort(aio, [], 'aio, er, sie, es sagt').richtig, false);
 });
+
+// Book notation typed literally, parentheses included ("(be)grüßen" as
+// printed for salūtāre) - user feedback 2026-10-29.
+test('meaning typed exactly as printed, with parentheses, is accepted', () => {
+  const salutare = {
+    wortart: 'verb', lemma: 'salūtāre',
+    formen: { praesens_1sg: 'salūtō', perfekt_1sg: 'salūtāvī' },
+    bedeutungen: [{ text: '(be)grüßen', typ: 'muss' }],
+  };
+  const felder = ['praesens_1sg', 'perfekt_1sg'];
+  for (const bedeutung of ['(be)grüßen', '(be)gruessen', 'begrüßen', 'grüßen']) {
+    assert.equal(pruefeAntwort(salutare, felder, `salutare, saluto, salutavi, ${bedeutung}`).richtig, true, bedeutung);
+  }
+});
+
+test('every meaning with parentheses is accepted when typed exactly as printed', () => {
+  const fehler = [];
+  for (const vokabel of alleVokabeln) {
+    const felder = aktiveAbfrageFelder(vokabel, alleFelderDerWortart(vokabel.wortart));
+    const muss = vokabel.bedeutungen.filter(b => b.typ === 'muss');
+    muss.forEach((b, i) => {
+      if (!b.text.includes('(')) return;
+      const andere = muss.filter((_, j) => j !== i).map(a => sollVarianten(a.text, vokabel.wortart === 'verb')[0]);
+      const lemmaUndFormen = [sollVarianten(vokabel.lemma)[0], ...felder.map(f => (f === 'genus'
+        ? vokabel.formen.genus.split('/')[0]
+        : sollVarianten(vokabel.formen[f])[0]))];
+      const antwort = [...lemmaUndFormen, b.text, ...andere].join(', ');
+      if (!pruefeAntwort(vokabel, felder, antwort).richtig) fehler.push(`${vokabel.id}: "${antwort}"`);
+    });
+  }
+  assert.deepEqual(fehler, []);
+});
