@@ -353,6 +353,7 @@ function rueckfrageAnzeigen(vokabel, abfrageFelder, fehlendeListe, bisherigerRoh
     antwortPruefen(vokabel, abfrageFelder, eingabe, weiterButton, container, bisherigerRohtext, fehlendeListe[0])
   ));
   container.appendChild(weiterButton);
+  eingabe.waehrendAufnahmeGesperrt.push(weiterButton);
 
   eingabe.addEventListener('keydown', ev => {
     // preventDefault: sonst landet derselbe Tastendruck nach dem Prüfen
@@ -557,6 +558,7 @@ function renderKarte() {
   pruefenButton.textContent = 'Prüfen';
   pruefenButton.addEventListener('click', () => antwortPruefen(vokabel, abfrageFelder, eingabe, pruefenButton, container));
   container.appendChild(pruefenButton);
+  eingabe.waehrendAufnahmeGesperrt.push(pruefenButton);
 
   eingabe.addEventListener('keydown', ev => {
     // preventDefault: sonst landet derselbe Tastendruck nach dem Prüfen

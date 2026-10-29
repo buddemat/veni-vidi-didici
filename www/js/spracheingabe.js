@@ -62,6 +62,10 @@ function mikrofonKnopfErstellen(input) {
   button.textContent = '🎤';
   button.setAttribute('aria-label', 'Spracheingabe');
   button.addEventListener('click', async () => {
+    // Während der Aufnahme auch die Knöpfe sperren, die die Antwort
+    // abschicken ("Prüfen") - sonst würde die halb fertige Eingabe geprüft.
+    const gesperrt = input.waehrendAufnahmeGesperrt || [];
+    gesperrt.forEach(knopf => { knopf.disabled = true; });
     button.disabled = true;
     button.classList.add('nimmt-auf');
     button.textContent = '⏺';
@@ -76,6 +80,7 @@ function mikrofonKnopfErstellen(input) {
       console.error('Spracheingabe fehlgeschlagen:', fehler);
       alert(`Spracheingabe hat nicht funktioniert: ${fehler?.message || fehler}`);
     } finally {
+      gesperrt.forEach(knopf => { knopf.disabled = false; });
       button.disabled = false;
       button.classList.remove('nimmt-auf');
       button.textContent = '🎤';
@@ -91,6 +96,8 @@ function mikrofonKnopfErstellen(input) {
 // zusätzlich als `input.mikrofonKnopf` dran, damit man ihn z.B. zusammen
 // mit dem Eingabefeld deaktivieren kann (`eingabe.disabled = true` allein
 // deaktiviert den separaten Knopf nicht automatisch mit).
+// Knöpfe, die gesperrt sein sollen, solange die Spracherkennung läuft (z.B.
+// "Prüfen"), trägt der Aufrufer in `input.waehrendAufnahmeGesperrt` ein.
 export function mitMikrofon(input) {
   const wrapper = document.createElement('div');
   wrapper.className = 'eingabe-mit-mikrofon';
@@ -98,5 +105,6 @@ export function mitMikrofon(input) {
   const mikrofonKnopf = mikrofonKnopfErstellen(input);
   wrapper.append(input, mikrofonKnopf);
   input.mikrofonKnopf = mikrofonKnopf;
+  input.waehrendAufnahmeGesperrt = [];
   return input;
 }
