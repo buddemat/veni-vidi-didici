@@ -315,8 +315,30 @@ export function sollVarianten(text, praefixPruefungAktiv = false) {
     for (const seite of seiten) {
       for (const variante of klammerVarianten(seite, praefixPruefungAktiv)) varianten.add(variante);
     }
+    for (const ausdruck of wortAlternativen(seiten)) {
+      for (const variante of klammerVarianten(ausdruck, praefixPruefungAktiv)) varianten.add(variante);
+    }
   }
   return [...varianten];
+}
+
+// Steht der "/" nur zwischen zwei einzelnen Wörtern eines längeren Ausdrucks
+// ("Sei/seid gegrüßt!", "die linke Hand/Seite"), ist jede Seite für sich
+// unvollständig - gemeint ist der ganze Ausdruck mit dem einen oder dem
+// anderen Wort: "Sei gegrüßt!" und "seid gegrüßt!". Erkennbar daran, dass
+// genau eine Seite ein einzelnes Wort ist; sind beide Seiten mehrere Wörter
+// ("der Diener/die Dienerin"), sind es schon vollständige Alternativen.
+// Nur bei genau einem "/".
+function wortAlternativen(seiten) {
+  if (seiten.length !== 2) return [];
+  const [links, rechts] = seiten.map(s => s.split(/\s+/));
+  if (links.length === 1 && rechts.length > 1) {
+    return [[links[0], ...rechts.slice(1)].join(' '), rechts.join(' ')];
+  }
+  if (rechts.length === 1 && links.length > 1) {
+    return [links.join(' '), [...links.slice(0, -1), rechts[0]].join(' ')];
+  }
+  return [];
 }
 
 // Zerlegt einen (bereits normalisierten) Text in "Artikel" + "Rest", falls er

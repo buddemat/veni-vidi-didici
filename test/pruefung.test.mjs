@@ -335,3 +335,49 @@ test('every meaning with parentheses is accepted when typed exactly as printed',
   }
   assert.deepEqual(fehler, []);
 });
+
+// "/" between single words of a longer expression: each full expression
+// counts on its own, and both together - user feedback 2026-10-29.
+test('slash between single words: every full expression is accepted', () => {
+  const salve = {
+    wortart: 'sonstiges', lemma: 'salvē!/salvēte!', formen: {},
+    bedeutungen: [{ text: 'sei/seid gegrüßt!', typ: 'muss' }],
+  };
+  for (const bedeutung of ['sei gegrüßt', 'seid gegrüßt!', 'sei gegrüßt, seid gegrüßt', 'sei/seid gegrüßt!']) {
+    assert.equal(pruefeAntwort(salve, [], `salve, ${bedeutung}`).richtig, true, bedeutung);
+  }
+  assert.deepEqual(sollVarianten('die linke Hand/Seite').filter(v => v.includes(' ')).sort(),
+    ['die linke Hand', 'die linke Hand/Seite', 'die linke Seite']);
+  // Both sides several words: already complete alternatives, nothing mixed.
+  assert.deepEqual(sollVarianten('der Diener/die Dienerin').sort(),
+    ['der Diener', 'der Diener/die Dienerin', 'die Dienerin']);
+});
+
+test('every meaning with a slash is accepted with each full expression', () => {
+  const fehler = [];
+  for (const vokabel of alleVokabeln) {
+    const felder = aktiveAbfrageFelder(vokabel, alleFelderDerWortart(vokabel.wortart));
+    const istVerb = vokabel.wortart === 'verb';
+    const lemmaUndFormen = [sollVarianten(vokabel.lemma)[0], ...felder.map(f => (f === 'genus'
+      ? vokabel.formen.genus.split('/')[0]
+      : sollVarianten(vokabel.formen[f])[0]))];
+    const muss = vokabel.bedeutungen.filter(b => b.typ === 'muss');
+    muss.forEach((b, i) => {
+      // "der/die Bürger(in)" has its own rule (ARTIKEL_PAAR), tested elsewhere.
+      if (b.text.startsWith('der/die ')) return;
+      const seiten = b.text.split('/');
+      if (seiten.length !== 2) return;
+      const [links, rechts] = seiten.map(s => s.trim().split(/\s+/));
+      let ausdruecke;
+      if (links.length === 1 && rechts.length > 1) ausdruecke = [[links[0], ...rechts.slice(1)], rechts];
+      else if (rechts.length === 1 && links.length > 1) ausdruecke = [links, [...links.slice(0, -1), rechts[0]]];
+      else return;
+      const andere = muss.filter((_, j) => j !== i).map(a => sollVarianten(a.text, istVerb)[0]);
+      for (const ausdruck of ausdruecke) {
+        const antwort = [...lemmaUndFormen, ausdruck.join(' ').replace(/[()]/g, ''), ...andere].join(', ');
+        if (!pruefeAntwort(vokabel, felder, antwort).richtig) fehler.push(`${vokabel.id}: "${antwort}"`);
+      }
+    });
+  }
+  assert.deepEqual(fehler, []);
+});
