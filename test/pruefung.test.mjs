@@ -388,3 +388,21 @@ test('every meaning with a slash is accepted with each full expression', () => {
   }
   assert.deepEqual(fehler, []);
 });
+
+// Missing-article follow-up only for meanings that start with der/die/das:
+// "sehen" + "das" must not pass as "da stehen" via typo tolerance.
+test('no article follow-up for a meaning without an article', () => {
+  const stare = {
+    wortart: 'verb', lemma: 'stāre',
+    formen: { praesens_1sg: 'stō', perfekt_1sg: 'stetī' },
+    bedeutungen: [{ text: '(da)stehen', typ: 'muss' }],
+  };
+  const [bedeutung] = pruefeAntwort(stare, ['praesens_1sg'], 'stare, sto, sehen').bedeutungErgebnisse;
+  assert.equal(bedeutung.ok, false);
+  assert.equal(bedeutung.fehltNurArtikel, false);
+  const sol = {
+    wortart: 'substantiv', lemma: 'sōl', formen: {},
+    bedeutungen: [{ text: 'die Sonne', typ: 'muss' }],
+  };
+  assert.equal(pruefeAntwort(sol, [], 'sol, Sonne').bedeutungErgebnisse[0].fehltNurArtikel, true);
+});

@@ -429,7 +429,15 @@ function segmentPasstIrgendwo(segment, erwarteteWerte) {
 // fehlend erkannt, siehe bedeutungErgebnisse) von einer echten Falschangabe
 // unterscheiden - "Sonne" soll nicht als "passt nicht dazu" gemeldet werden.
 function segmentKoennteFehlenderArtikelSein(segment, erwarteteWerte) {
-  return GENUS_ARTIKEL.some(artikel => segmentPasstIrgendwo(`${artikel} ${segment}`, erwarteteWerte));
+  return erwarteteWerte.some(e => findeArtikelKandidatSegment(e.sollVarianten, [segment], new Set()) !== null);
+}
+
+// Nur Soll-Varianten, die selbst mit der/die/das beginnen ("die Sonne"):
+// Nur dort kann ein Artikel fehlen. Sonst würde z.B. "sehen" mit
+// vorangestelltem "das" per Tippfehlertoleranz zu "da stehen" passen und
+// eine Artikel-Rückfrage zum Verb "(da)stehen" auslösen.
+function variantenMitArtikel(sollVarianten) {
+  return sollVarianten.filter(v => artikelUndRest(normalisiere(v)) !== null);
 }
 
 // Gibt es unter den noch nicht verbrauchten Segmenten eines, das mit
@@ -439,10 +447,12 @@ function segmentKoennteFehlenderArtikelSein(segment, erwarteteWerte) {
 // einfügen kann, statt ihn als eigenständiges (mit Genus verwechselbares)
 // neues Segment anzuhängen.
 function findeArtikelKandidatSegment(sollVarianten, segmente, belegteSegmente) {
+  const mitArtikel = variantenMitArtikel(sollVarianten);
+  if (mitArtikel.length === 0) return null;
   for (let si = 0; si < segmente.length; si++) {
     if (belegteSegmente.has(si)) continue;
     const segment = segmente[si];
-    if (GENUS_ARTIKEL.some(artikel => besteVarianzDistanz(sollVarianten, `${artikel} ${segment}`) !== null)) {
+    if (GENUS_ARTIKEL.some(artikel => besteVarianzDistanz(mitArtikel, `${artikel} ${segment}`) !== null)) {
       return segment;
     }
   }
