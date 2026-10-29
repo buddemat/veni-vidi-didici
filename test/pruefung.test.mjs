@@ -406,3 +406,27 @@ test('no article follow-up for a meaning without an article', () => {
   };
   assert.equal(pruefeAntwort(sol, [], 'sol, Sonne').bedeutungErgebnisse[0].fehltNurArtikel, true);
 });
+
+// Optional meaning given without its article ("Stille" for silentium): it is
+// recognised as such, so the follow-up can ask for the article.
+test('missing article is detected for optional meanings too', () => {
+  const silentium = {
+    wortart: 'substantiv', lemma: 'silentium',
+    formen: { genitiv_sg: 'silentiī', genus: 'n' },
+    bedeutungen: [
+      { text: 'die Ruhe', typ: 'muss' },
+      { text: 'die Stille', typ: 'kann' },
+      { text: 'das Schweigen', typ: 'kann' },
+    ],
+  };
+  const ergebnis = pruefeAntwort(silentium, [], 'silentium, Stille');
+  assert.equal(ergebnis.bedeutungErgebnisse[0].fehltNurArtikel, false);
+  assert.equal(ergebnis.kannBedeutungErgebnisse[0].fehltNurArtikel, true);
+  assert.equal(ergebnis.kannBedeutungErgebnisse[0].artikelKandidatSegment, 'Stille');
+  assert.equal(ergebnis.kannBedeutungErgebnisse[1].fehltNurArtikel, false);
+  // A segment is the article candidate of at most one meaning.
+  const doppelt = { ...silentium, bedeutungen: [{ text: 'die Ruhe', typ: 'muss' }, { text: 'die Ruhe', typ: 'kann' }] };
+  const r = pruefeAntwort(doppelt, [], 'silentium, Ruhe');
+  assert.equal(r.bedeutungErgebnisse[0].fehltNurArtikel, true);
+  assert.equal(r.kannBedeutungErgebnisse[0].fehltNurArtikel, false);
+});

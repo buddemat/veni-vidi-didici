@@ -634,14 +634,28 @@ export function pruefeAntwort(vokabel, abfrageFelder, rohtext, tippfehlerErlaubt
   });
 
   // Nicht Pflicht für "richtig", aber nützlich für die Anzeige (z.B. grün
-  // markieren, wenn eine KANN-Bedeutung korrekt mit genannt wurde).
+  // markieren, wenn eine KANN-Bedeutung korrekt mit genannt wurde) - und für
+  // die Rückfragen: Auch einer KANN-Bedeutung kann nur der Artikel fehlen
+  // (z.B. "Stille" bei silentium), dann wird danach gefragt. Segmente, die
+  // schon Artikel-Kandidat einer MUSS-Bedeutung sind, bleiben dieser.
+  const artikelSegmente = new Set(belegteSegmente);
+  bedeutungErgebnisse.forEach(e => {
+    if (e.artikelKandidatSegment !== null) artikelSegmente.add(segmente.indexOf(e.artikelKandidatSegment));
+  });
   const kannBedeutungErgebnisse = kannBedeutungen.map((b, index) => {
     const ei = erwarteteWerte.findIndex(e => e.typ === 'bedeutung-kann' && e.index === index);
     const si = zuordnung.get(ei);
+    const ok = si !== undefined;
+    const artikelKandidatSegment = ok
+      ? null
+      : findeArtikelKandidatSegment(erwarteteWerte[ei].sollVarianten, segmente, artikelSegmente);
+    if (artikelKandidatSegment !== null) artikelSegmente.add(segmente.indexOf(artikelKandidatSegment));
     return {
       soll: b.text,
-      erkannt: si !== undefined ? segmente[si] : null,
-      ok: si !== undefined,
+      erkannt: ok ? segmente[si] : null,
+      ok,
+      fehltNurArtikel: artikelKandidatSegment !== null,
+      artikelKandidatSegment,
     };
   });
 

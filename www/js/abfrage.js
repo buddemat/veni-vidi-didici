@@ -222,6 +222,32 @@ function ergebnisAnzeigen(container, vokabel, abfrageFelder, ergebnis, falschWer
 // aktualisiereFortschritt()/die Gewichtung (Schritt 6) übergeben.
 let rueckfrageZaehler = 0;
 
+// Rückfrage nach dem deutschen Artikel, wenn einer (MUSS- oder KANN-)
+// Bedeutung nur der fehlt (z.B. "Sonne" statt "die Sonne").
+function artikelEintrag(e) {
+  // Für die Anzeige die korrekt geschriebene Nomen-Form aus der erwarteten
+  // Bedeutung nehmen (e.soll ohne den führenden Artikel), nicht das getippte
+  // Segment - sonst würde ein Tippfehler wie "Sonde" statt "Sonne" in der
+  // Frage wiederholt statt korrigiert.
+  const korrektesWort = e.soll.replace(/^(der|die|das)\s+/i, '');
+  return {
+    label: `der deutsche Artikel zu "${korrektesWort}"`,
+    frage: `Wie ist der deutsche Artikel zu "${korrektesWort}"?`,
+    // Die Antwort muss direkt VOR das getippte Segment gesetzt werden
+    // ("Esel" -> "der Esel"), nicht als eigenes neues Segment - sonst würde
+    // z.B. "der" als Genus statt als Artikel interpretiert. Hier bewusst das
+    // ROHE Segment (nicht korrektesWort), da genau dieser Text im bisherigen
+    // Antworttext gesucht/ersetzt wird.
+    segment: e.artikelKandidatSegment,
+    // Für die "hat der Nutzer das Wort schon mitgeliefert?"-Prüfung in
+    // kombiniereRohtext() - dort muss gegen die KORREKTE Schreibweise
+    // verglichen werden, nicht gegen den Tippfehler, sonst würde z.B. die
+    // Antwort "die Sonne" (korrekt) nicht als "enthält Sonne" erkannt, weil
+    // sie den Tippfehler "Sonde" nicht enthält.
+    korrektesWort,
+  };
+}
+
 // Ermittelt, worüber (falls überhaupt) noch nachgefragt werden könnte:
 // nur EINFACH FEHLENDE Angaben (erkannt: null) zählen - sobald irgendwo
 // aktiv etwas Falsches genannt wurde (erkannt, aber nicht ok) oder es
@@ -247,6 +273,13 @@ function ermittleFehlendeEintraege(vokabel, abfrageFelder, ergebnis) {
   let bedeutungGenannt = [...ergebnis.bedeutungErgebnisse, ...ergebnis.kannBedeutungErgebnisse]
     .some(e => e.ok || e.fehltNurArtikel);
 
+  // Artikel einer genannten KANN-Bedeutung zuerst (z.B. "Stille" bei
+  // silentium) - danach ist sie vollständig, und eine fehlende MUSS-Bedeutung
+  // wird mit "noch" erfragt.
+  for (const e of ergebnis.kannBedeutungErgebnisse) {
+    if (e.fehltNurArtikel) eintraege.push(artikelEintrag(e));
+  }
+
   for (const e of ergebnis.bedeutungErgebnisse) {
     if (!e.ok && e.erkannt !== null) return [];
     if (!e.ok) {
@@ -255,27 +288,7 @@ function ermittleFehlendeEintraege(vokabel, abfrageFelder, ergebnis) {
       // (z.B. "Sonne" statt "die Sonne")? Wichtig, das nicht mit dem
       // lateinischen Genus zu vermischen (siehe unten).
       if (e.fehltNurArtikel) {
-        // Für die Anzeige die korrekt geschriebene Nomen-Form aus der
-        // erwarteten Bedeutung nehmen (e.soll ohne den führenden Artikel),
-        // nicht das getippte Segment - sonst würde ein Tippfehler wie
-        // "Sonde" statt "Sonne" in der Frage wiederholt statt korrigiert.
-        const korrektesWort = e.soll.replace(/^(der|die|das)\s+/i, '');
-        eintraege.push({
-          label: `der deutsche Artikel zu "${korrektesWort}"`,
-          frage: `Wie ist der deutsche Artikel zu "${korrektesWort}"?`,
-          // Die Antwort muss direkt VOR das getippte Segment gesetzt werden
-          // ("Esel" -> "der Esel"), nicht als eigenes neues Segment - sonst
-          // würde z.B. "der" als Genus statt als Artikel interpretiert. Hier
-          // bewusst das ROHE Segment (nicht korrektesWort), da genau dieser
-          // Text im bisherigen Antworttext gesucht/ersetzt wird.
-          segment: e.artikelKandidatSegment,
-          // Für die "hat der Nutzer das Wort schon mitgeliefert?"-Prüfung in
-          // kombiniereRohtext() - dort muss gegen die KORREKTE Schreibweise
-          // verglichen werden, nicht gegen den Tippfehler, sonst würde z.B.
-          // die Antwort "die Sonne" (korrekt) nicht als "enthält Sonne"
-          // erkannt, weil sie den Tippfehler "Sonde" nicht enthält.
-          korrektesWort,
-        });
+        eintraege.push(artikelEintrag(e));
       } else if (bedeutungGenannt) {
         eintraege.push({ label: 'eine weitere Bedeutung', frage: 'Und was bedeutet es noch?' });
       } else {
