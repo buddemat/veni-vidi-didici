@@ -7,8 +7,8 @@ const FELD_DEFINITIONEN = {
     { key: 'genitiv_pl', label: 'Genitiv Plural (wo angegeben)', frage: 'der Genitiv Plural' },
   ],
   verb: [
-    { key: 'praesens_1sg', label: 'Präsens (1. Person Singular)', frage: 'die 1.P.Sg. Präsens' },
-    { key: 'perfekt_1sg', label: 'Perfekt (1. Person Singular)', frage: 'die 1.P.Sg. Perfekt' },
+    { key: 'praesens_1sg', label: 'Präsens (1. Person Singular)', frage: 'die 1. Sg. Präs.' },
+    { key: 'perfekt_1sg', label: 'Perfekt (1. Person Singular)', frage: 'die 1. Sg. Perf.' },
     { key: 'ppp', label: 'PPP / Supin', frage: 'das PPP bzw. Supin' },
     { key: 'imperativ_sg', label: 'Imperativ Singular (wo angegeben)', frage: 'der Imperativ Singular' },
   ],
@@ -32,7 +32,7 @@ export function abfrageLabel(wortart, feldKey) {
 }
 
 // Für die Rückfrage "Und wie lautet …?": eigene Formulierung (`frage`) mit
-// Artikel und eindeutig ("die 1.P.Sg. Präsens", "der Genitiv Singular") -
+// Artikel und eindeutig ("die 1. Sg. Präs.", "der Genitiv Singular") -
 // die Kurzform allein ("Präsens", "Genitiv") ist dort zu knapp. Fallback
 // auf die Kurzform für Felder ohne `frage`.
 export function rueckfrageLabel(wortart, feldKey) {
