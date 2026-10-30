@@ -1,5 +1,6 @@
 import {
   getStore, persistStore, neuerFortschrittEintrag, loescheVokabelAusStore, exportiereWortschatz, importiereWortschatz,
+  kannWortschatzZuruecksetzen, vorschauWortschatzZuruecksetzen, wortschatzZuruecksetzen,
 } from './store.js';
 import { zeigeScreen } from './screens.js';
 import { feldDefinitionenFuer } from './einstellungen.js';
@@ -444,4 +445,32 @@ export function initEditor() {
     alert(anzahl > 0 ? `${anzahl} neue Vokabel(n) importiert.` : 'Keine neuen Vokabeln (alles schon vorhanden).');
     renderVokabelliste();
   });
+
+  const zuruecksetzenButton = document.getElementById('wortschatz-zuruecksetzen-button');
+  zuruecksetzenButton.hidden = !kannWortschatzZuruecksetzen();
+  zuruecksetzenButton.addEventListener('click', () => {
+    if (fragWortschatzZuruecksetzen()) renderVokabelliste();
+  });
+}
+
+// Rückfrage mit dem, was sich konkret ändern würde - bei nichts zu tun nur
+// ein Hinweis.
+function fragWortschatzZuruecksetzen() {
+  const { zurueckgesetzt, entfernt, wiederhergestellt } = vorschauWortschatzZuruecksetzen();
+  if (zurueckgesetzt + entfernt + wiederhergestellt === 0) {
+    alert('Der Wortschatz entspricht schon dem Stand der App.');
+    return false;
+  }
+  const zeilen = [];
+  if (zurueckgesetzt) zeilen.push(`- ${zurueckgesetzt} bearbeitete Vokabel(n) bekommen wieder die Fassung der App`);
+  if (entfernt) zeilen.push(`- ${entfernt} selbst angelegte Vokabel(n) werden gelöscht`);
+  if (wiederhergestellt) zeilen.push(`- ${wiederhergestellt} gelöschte Vokabel(n) kommen zurück`);
+  const tipp = entfernt
+    ? '\n\nTipp: Vorher "Wortschatz exportieren" - selbst angelegte Vokabeln lassen sich dann wieder importieren.'
+    : '';
+  const frage = `Wortschatz auf den Stand der App zurücksetzen?\n\n${zeilen.join('\n')}\n\n`
+    + `Der Lernstand der übrigen Vokabeln bleibt erhalten.${tipp}`;
+  if (!confirm(frage)) return false;
+  wortschatzZuruecksetzen();
+  return true;
 }

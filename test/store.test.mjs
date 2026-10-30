@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { migriereStore, aktualisiereWortschatz, neuerFortschrittEintrag } from '../www/js/store.js';
+import { migriereStore, aktualisiereWortschatz, setzeWortschatzZurueck, neuerFortschrittEintrag } from '../www/js/store.js';
 import { seed } from './seed.mjs';
 
 const auswahl = { modus: 'einzel', lektionen: [23], bisId: null, abfrageModus: 'gewichtet', rundenende: 'alle-einmal' };
@@ -114,5 +114,42 @@ test('aktualisiereWortschatz: unchanged vocabulary changes nothing (every start)
   const store = storeAus(seed);
   const vorher = JSON.stringify(store);
   assert.deepEqual(aktualisiereWortschatz(store, seed), { neu: 0, aktualisiert: 0, entfernt: 0 });
+  assert.equal(JSON.stringify(store), vorher);
+});
+
+// --- setzeWortschatzZurueck: "Wortschatz zurücksetzen" ---
+
+test('setzeWortschatzZurueck: edited, created and deleted words go back to the shipped state', () => {
+  const store = storeAus(seedMit(sol, luna));
+  // edited on the device
+  store.vokabeln['L01-001'] = { ...store.vokabeln['L01-001'], bedeutungen: [{ text: 'die liebe Sonne', typ: 'muss' }], bearbeitet: true };
+  // created on the device
+  store.vokabeln['L01-003'] = { ...luna, id: 'L01-003', lemma: 'stella', lektion: 1, bearbeitet: true };
+  store.fortschritt['L01-003'] = { ...geuebt };
+  // deleted on the device
+  delete store.vokabeln['L01-002'];
+  delete store.fortschritt['L01-002'];
+  store.geloeschteIds.push('L01-002');
+
+  assert.deepEqual(setzeWortschatzZurueck(store, seedMit(sol, luna)), { zurueckgesetzt: 1, entfernt: 1, wiederhergestellt: 1 });
+  assert.deepEqual(store.vokabeln, storeAus(seedMit(sol, luna)).vokabeln);
+  assert.deepEqual(store.fortschritt['L01-001'], geuebt);
+  assert.deepEqual(store.fortschritt['L01-002'], neuerFortschrittEintrag());
+  assert.equal(store.fortschritt['L01-003'], undefined);
+  assert.deepEqual(store.geloeschteIds, []);
+});
+
+test('setzeWortschatzZurueck: edited word that became another Latin word loses its progress', () => {
+  const store = storeAus(seedMit(sol));
+  store.vokabeln['L01-001'] = { ...store.vokabeln['L01-001'], lemma: 'stella', bearbeitet: true };
+  setzeWortschatzZurueck(store, seedMit(sol));
+  assert.equal(store.vokabeln['L01-001'].lemma, 'sōl');
+  assert.deepEqual(store.fortschritt['L01-001'], neuerFortschrittEintrag());
+});
+
+test('setzeWortschatzZurueck: unchanged vocabulary changes nothing', () => {
+  const store = storeAus(seed);
+  const vorher = JSON.stringify(store);
+  assert.deepEqual(setzeWortschatzZurueck(store, seed), { zurueckgesetzt: 0, entfernt: 0, wiederhergestellt: 0 });
   assert.equal(JSON.stringify(store), vorher);
 });

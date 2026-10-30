@@ -170,16 +170,52 @@ export function aktualisiereWortschatz(store, seedJson) {
   return anzahl;
 }
 
+// Setzt den Wortschatz auf den mitgelieferten Stand zurück (Vokabelliste,
+// "Wortschatz zurücksetzen"): im Editor bearbeitete Vokabeln bekommen
+// wieder die Fassung der App, selbst angelegte werden samt Fortschritt
+// entfernt, gelöschte kommen zurück. Der Lernstand bleibt erhalten, außer
+// eine bearbeitete Vokabel war ein anderes lateinisches Wort (siehe
+// aktualisiereWortschatz). Gibt die Anzahl je Fall zurück.
+export function setzeWortschatzZurueck(store, seedJson) {
+  const vokabelnAusSeed = flacheVokabelnAusSeed(seedJson);
+  const anzahl = { zurueckgesetzt: 0, entfernt: 0, wiederhergestellt: 0 };
+
+  for (const [id, vokabel] of Object.entries(store.vokabeln)) {
+    if (!vokabel.bearbeitet) continue;
+    const seedVokabel = vokabelnAusSeed[id];
+    if (seedVokabel) {
+      if (vokabel.lemma !== seedVokabel.lemma || !store.fortschritt[id]) {
+        store.fortschritt[id] = neuerFortschrittEintrag();
+      }
+      store.vokabeln[id] = seedVokabel;
+      anzahl.zurueckgesetzt++;
+    } else {
+      delete store.vokabeln[id];
+      delete store.fortschritt[id];
+      anzahl.entfernt++;
+    }
+  }
+
+  // Ohne die Liste gelöschter IDs ergänzt der normale Abgleich sie wieder.
+  store.geloeschteIds = [];
+  anzahl.wiederhergestellt = aktualisiereWortschatz(store, seedJson).neu;
+  return anzahl;
+}
+
 // Haelt den geladenen Store im Speicher, damit ihn alle Screens ueber
 // getStore()/persistStore() gemeinsam nutzen koennen, ohne ihn
 // durchzureichen oder bei jedem Zugriff neu aus localStorage zu lesen.
 let aktuellerStore = null;
+// Mitgelieferter Wortschatz (vokabeln.json) für "Wortschatz zurücksetzen" -
+// null, wenn nur der Beispiel-Wortschatz geladen werden konnte.
+let mitgelieferterWortschatz = null;
 
 // `wortschatzAbgleichen`: false, wenn nur der Beispiel-Wortschatz geladen
 // werden konnte - dann nicht abgleichen, sonst würde ein vorhandener echter
 // Wortschatz als "aus der App entfernt" gelöscht.
 export function initStore(seedJson, { wortschatzAbgleichen = true } = {}) {
   aktuellerStore = importiereSeedFallsNoetig(seedJson);
+  mitgelieferterWortschatz = wortschatzAbgleichen ? seedJson : null;
   if (wortschatzAbgleichen) {
     const anzahl = aktualisiereWortschatz(aktuellerStore, seedJson);
     if (anzahl.neu || anzahl.aktualisiert || anzahl.entfernt) {
@@ -188,6 +224,22 @@ export function initStore(seedJson, { wortschatzAbgleichen = true } = {}) {
     }
   }
   return aktuellerStore;
+}
+
+export function kannWortschatzZuruecksetzen() {
+  return mitgelieferterWortschatz !== null;
+}
+
+// Was "Wortschatz zurücksetzen" ändern würde (für die Rückfrage), ohne den
+// Store anzufassen.
+export function vorschauWortschatzZuruecksetzen() {
+  return setzeWortschatzZurueck(JSON.parse(JSON.stringify(aktuellerStore)), mitgelieferterWortschatz);
+}
+
+export function wortschatzZuruecksetzen() {
+  const anzahl = setzeWortschatzZurueck(aktuellerStore, mitgelieferterWortschatz);
+  persistStore();
+  return anzahl;
 }
 
 // Im Editor gelöscht: merken, damit der Abgleich beim nächsten Start
