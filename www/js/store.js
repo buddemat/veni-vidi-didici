@@ -72,6 +72,7 @@ export function speichereStore(store) {
 // Bringt einen gespeicherten oder importierten Store-/Profil-Stand auf die
 // aktuelle Struktur. Gibt true zurück, wenn etwas geändert wurde.
 // - Stores von vor Einführung des Profils haben kein profil-Objekt.
+// - Stores von vor 0.10.2 haben keine Liste gelöschter Vokabel-IDs.
 // - Die zuletzt gestartete Abfrage-Auswahl ("Wie zuletzt") lag früher in
 //   einstellungen.letzte_abfrage, gehört aber als persönlicher Stand ins
 //   Profil (profil.letzteAbfrage).
@@ -79,6 +80,12 @@ export function migriereStore(store) {
   let geaendert = false;
   if (!store.profil) {
     store.profil = standardProfil();
+    geaendert = true;
+  }
+  // Im Editor gelöschte Vokabel-IDs (siehe aktualisiereWortschatz) - gibt
+  // es erst seit Version 0.10.2.
+  if (!Array.isArray(store.geloeschteIds)) {
+    store.geloeschteIds = [];
     geaendert = true;
   }
   if (store.einstellungen && 'letzte_abfrage' in store.einstellungen) {
@@ -107,31 +114,60 @@ export function importiereSeedFallsNoetig(seedJson) {
     fortschritt,
     einstellungen: standardEinstellungen(),
     profil: standardProfil(),
+    geloeschteIds: [],
     seedVersion: SEED_VERSION,
   };
   speichereStore(neuerStore);
   return neuerStore;
 }
 
-// Ergänzt einen bestehenden Store um neue Lektionen/Vokabeln aus einer
-// aktualisierten Seed-Datei (App-Update). Bestehende Vokabel-IDs werden
-// nie überschrieben, damit Korrekturen/Fortschritt erhalten bleiben.
-export function ergaenzeNeueLektionen(store, seedJson) {
+// Gleicht den gespeicherten Wortschatz bei jedem App-Start mit dem
+// mitgelieferten (vokabeln.json) ab, damit Korrekturen und neue Vokabeln
+// eines App-Updates auf dem Handy ankommen - ohne Fortschritt oder eigene
+// Änderungen zu verlieren. Regeln:
+// - neue Vokabel im Wortschatz der App: hinzufügen (mit neuem Fortschritt)
+// - Vokabel dort geändert, auf dem Handy nicht bearbeitet: aktualisieren,
+//   Fortschritt bleibt - außer das lateinische Wort ist ein anderes
+//   (gleiche ID, anderes Lemma, z.B. nach Umnummerierung): dann gehört der
+//   bisherige Lernstand nicht dazu und wird zurückgesetzt
+// - im Editor bearbeitete Vokabel (`bearbeitet`): bleibt unverändert
+// - im Editor gelöschte Vokabel (`geloeschteIds`): bleibt gelöscht
+// - Vokabel aus dem Wortschatz der App entfernt, auf dem Handy nicht
+//   bearbeitet: wird samt Fortschritt entfernt
+// - auf dem Handy angelegte Vokabeln (immer `bearbeitet`): bleiben
+// Wiederholtes Aufrufen ändert nichts mehr. Gibt die Anzahl der
+// hinzugefügten, aktualisierten und entfernten Vokabeln zurück.
+export function aktualisiereWortschatz(store, seedJson) {
   const vokabelnAusSeed = flacheVokabelnAusSeed(seedJson);
-  let neuHinzugefuegt = 0;
+  const geloescht = new Set(store.geloeschteIds || []);
+  const anzahl = { neu: 0, aktualisiert: 0, entfernt: 0 };
 
-  for (const [id, vokabel] of Object.entries(vokabelnAusSeed)) {
-    if (store.vokabeln[id]) continue;
-    store.vokabeln[id] = vokabel;
-    store.fortschritt[id] = neuerFortschrittEintrag();
-    neuHinzugefuegt++;
+  for (const [id, seedVokabel] of Object.entries(vokabelnAusSeed)) {
+    if (geloescht.has(id)) continue;
+    const vorhanden = store.vokabeln[id];
+    if (!vorhanden) {
+      store.vokabeln[id] = seedVokabel;
+      store.fortschritt[id] = neuerFortschrittEintrag();
+      anzahl.neu++;
+      continue;
+    }
+    if (vorhanden.bearbeitet) continue;
+    if (JSON.stringify(vorhanden) === JSON.stringify(seedVokabel)) continue;
+    if (vorhanden.lemma !== seedVokabel.lemma || !store.fortschritt[id]) {
+      store.fortschritt[id] = neuerFortschrittEintrag();
+    }
+    store.vokabeln[id] = seedVokabel;
+    anzahl.aktualisiert++;
   }
 
-  if (neuHinzugefuegt > 0) {
-    store.seedVersion = SEED_VERSION;
-    speichereStore(store);
+  for (const [id, vokabel] of Object.entries(store.vokabeln)) {
+    if (vokabelnAusSeed[id] || vokabel.bearbeitet) continue;
+    delete store.vokabeln[id];
+    delete store.fortschritt[id];
+    anzahl.entfernt++;
   }
-  return neuHinzugefuegt;
+
+  return anzahl;
 }
 
 // Haelt den geladenen Store im Speicher, damit ihn alle Screens ueber
@@ -139,9 +175,28 @@ export function ergaenzeNeueLektionen(store, seedJson) {
 // durchzureichen oder bei jedem Zugriff neu aus localStorage zu lesen.
 let aktuellerStore = null;
 
-export function initStore(seedJson) {
+// `wortschatzAbgleichen`: false, wenn nur der Beispiel-Wortschatz geladen
+// werden konnte - dann nicht abgleichen, sonst würde ein vorhandener echter
+// Wortschatz als "aus der App entfernt" gelöscht.
+export function initStore(seedJson, { wortschatzAbgleichen = true } = {}) {
   aktuellerStore = importiereSeedFallsNoetig(seedJson);
+  if (wortschatzAbgleichen) {
+    const anzahl = aktualisiereWortschatz(aktuellerStore, seedJson);
+    if (anzahl.neu || anzahl.aktualisiert || anzahl.entfernt) {
+      console.log('Wortschatz abgeglichen:', anzahl);
+      persistStore();
+    }
+  }
   return aktuellerStore;
+}
+
+// Im Editor gelöscht: merken, damit der Abgleich beim nächsten Start
+// (aktualisiereWortschatz) die Vokabel nicht wieder hinzufügt.
+export function loescheVokabelAusStore(vokabelId) {
+  delete aktuellerStore.vokabeln[vokabelId];
+  delete aktuellerStore.fortschritt[vokabelId];
+  if (!aktuellerStore.geloeschteIds.includes(vokabelId)) aktuellerStore.geloeschteIds.push(vokabelId);
+  persistStore();
 }
 
 export function getStore() {

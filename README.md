@@ -22,6 +22,13 @@ The repository contains only a small example vocabulary
 `www/assets/vokabeln.json` (same format; ignored by Git). If that file is
 missing, the app starts with the example.
 
+On every start, the app compares its stored vocabulary with the shipped file,
+so corrections and new words in an app update reach installed apps: new
+words are added, changed words are updated (progress is kept), and words
+removed from the file are removed. Words edited, deleted or created in the
+app's editor are left as they are. Keep the IDs of existing words stable: a
+word whose ID now belongs to a different Latin word loses its progress.
+
 ## Development
 
 ```sh

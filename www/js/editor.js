@@ -1,5 +1,5 @@
 import {
-  getStore, persistStore, neuerFortschrittEintrag, exportiereWortschatz, importiereWortschatz,
+  getStore, persistStore, neuerFortschrittEintrag, loescheVokabelAusStore, exportiereWortschatz, importiereWortschatz,
 } from './store.js';
 import { zeigeScreen } from './screens.js';
 import { feldDefinitionenFuer } from './einstellungen.js';
@@ -28,10 +28,7 @@ function naechsteIdFuerLektion(lektionNr) {
 
 function loescheVokabel(vokabel) {
   if (!confirm(`"${vokabel.lemma}" wirklich löschen?`)) return false;
-  const store = getStore();
-  delete store.vokabeln[vokabel.id];
-  delete store.fortschritt[vokabel.id];
-  persistStore();
+  loescheVokabelAusStore(vokabel.id);
   return true;
 }
 
