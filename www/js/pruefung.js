@@ -173,7 +173,8 @@ export function zerlegeAntwort(rohtext) {
 // bei einer femininen Vokabel das "die" aus der Bedeutung "die Insel" nicht
 // mehr von einer eigenständigen Genus-Angabe "die" unterscheiden.
 // Bei Wörtern mit zwei Genera dürfen auch beide als eigene Segmente kommen
-// ("m, f") - alle eigenständigen Genus-Segmente werden gesammelt, Ergebnis
+// ("m, f") oder jeweils an eine Bedeutung angehängt ("der Sklave maskulinum,
+// die Sklavin femininum") - alle Genus-Angaben werden gesammelt, Ergebnis
 // dann z.B. "m/f".
 export function trenneGenusAus(segmente) {
   const genera = [];
@@ -184,13 +185,11 @@ export function trenneGenusAus(segmente) {
       genera.push(...erkannt.split('/'));
       continue;
     }
-    if (genera.length === 0) {
-      const treffer = erkenneGenusPraefixOderSuffix(segment);
-      if (treffer) {
-        genera.push(treffer.genus);
-        rest.push(treffer.rest);
-        continue;
-      }
+    const treffer = erkenneGenusPraefixOderSuffix(segment);
+    if (treffer) {
+      genera.push(treffer.genus);
+      rest.push(treffer.rest);
+      continue;
     }
     rest.push(segment);
   }

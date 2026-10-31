@@ -430,3 +430,27 @@ test('missing article is detected for optional meanings too', () => {
   assert.equal(r.bedeutungErgebnisse[0].fehltNurArtikel, true);
   assert.equal(r.kannBedeutungErgebnisse[0].fehltNurArtikel, false);
 });
+
+// Two genders, each said along with its meaning - as the quiz hint suggests
+// ("Genus kannst du einfach mit dazusagen"). Previously only the first one
+// was recognised, the second meaning counted as a wrong extra item.
+test('two genders, each attached to its meaning, are accepted', () => {
+  const servus = {
+    wortart: 'substantiv', lemma: 'servus/serva', formen: { genus: 'm/f' },
+    bedeutungen: [{ text: 'der Sklave/die Sklavin', typ: 'muss' }],
+  };
+  for (const antwort of [
+    'servus, der Sklave maskulinum, die Sklavin femininum',
+    'servus, maskulinum der Sklave, femininum die Sklavin',
+    'servus, der Sklave maskulinum',
+    'servus, maskulinum oder femininum, der Sklave',
+  ]) {
+    assert.equal(pruefeAntwort(servus, ['genus'], antwort).richtig, true, antwort);
+  }
+  // a gender that does not fit still makes the answer wrong
+  assert.equal(pruefeAntwort(servus, ['genus'], 'servus, der Sklave maskulinum, die Sklavin neutrum').richtig, false);
+  // one-gender noun: a second, different gender is wrong
+  const sol = { wortart: 'substantiv', lemma: 'sōl', formen: { genus: 'm' }, bedeutungen: [{ text: 'die Sonne', typ: 'muss' }, { text: 'der Tag', typ: 'kann' }] };
+  assert.equal(pruefeAntwort(sol, ['genus'], 'sol, die Sonne maskulinum, der Tag femininum').richtig, false);
+  assert.equal(pruefeAntwort(sol, ['genus'], 'sol, die Sonne maskulinum, der Tag maskulinum').richtig, true);
+});
