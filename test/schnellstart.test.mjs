@@ -5,8 +5,8 @@ import {
   neuesteLektionAuswahl, beschreibeAuswahl, wichtigeVokabelIds,
 } from '../www/js/schnellstart.js';
 
-// Small vocabulary: L1 with 3, L2 with 2, L5 with 2 words, plus one extra
-// word without a lesson.
+// Small vocabulary: L1 with 3, L2 with 2, L5 with 2 words, plus one optional
+// word (Inselwortschatz) in L1.
 const vokabeln = {
   'L01-001': { id: 'L01-001', lektion: 1 },
   'L01-002': { id: 'L01-002', lektion: 1 },
@@ -15,15 +15,16 @@ const vokabeln = {
   'L02-002': { id: 'L02-002', lektion: 2 },
   'L05-002': { id: 'L05-002', lektion: 5 },
   'L05-001': { id: 'L05-001', lektion: 5 },
-  'I01-001': { id: 'I01-001', insel: 1 },
+  'L01-004': { id: 'L01-004', lektion: 1, fakultativ: true },
 };
 const gruppen = gruppiereNachLektion(vokabeln);
 
 const geuebt = (level, fehler = 0, zuletzt = 1000) => ({ level, fehler, zuletzt, rueckfragen: 0 });
 const neu = () => ({ level: 1, fehler: 0, zuletzt: 0, rueckfragen: 0 });
 
-test('gruppiereNachLektion: sorted by ID, words without a lesson excluded', () => {
+test('gruppiereNachLektion: sorted by ID, Inselwortschatz excluded', () => {
   assert.deepEqual(Object.keys(gruppen), ['1', '2', '5']);
+  assert.deepEqual(gruppen[1].map(v => v.id), ['L01-001', 'L01-002', 'L01-003']);
   assert.deepEqual(gruppen[5].map(v => v.id), ['L05-001', 'L05-002']);
 });
 
@@ -62,8 +63,10 @@ test('schwacheVokabelIds: right the first time is not weak', () => {
 test('zuletztGeuebteLektion: highest lesson with a quizzed word', () => {
   assert.equal(zuletztGeuebteLektion(vokabeln, {}), null);
   assert.equal(zuletztGeuebteLektion(vokabeln, { 'L01-001': geuebt(3), 'L02-002': geuebt(1) }), 2);
-  // words without a lesson don't count, neither do never-quizzed ones
-  assert.equal(zuletztGeuebteLektion(vokabeln, { 'I01-001': geuebt(3), 'L05-001': neu() }), null);
+  // never-quizzed words don't count; a quizzed Inselwortschatz word counts
+  // for its lesson
+  assert.equal(zuletztGeuebteLektion(vokabeln, { 'L05-001': neu() }), null);
+  assert.equal(zuletztGeuebteLektion(vokabeln, { 'L01-004': geuebt(3), 'L05-001': neu() }), 1);
 });
 
 test('neuesteLektionAuswahl: profile before automatic, "bis" only if it matches the lesson', () => {
@@ -97,7 +100,7 @@ test('wichtigeVokabelIds: marked words from lesson 1 up to the current lesson', 
     'L02-001': { id: 'L02-001', lektion: 2, wichtig: true },
     'L02-002': { id: 'L02-002', lektion: 2, wichtig: true },
     'L03-001': { id: 'L03-001', lektion: 3, wichtig: true },
-    'I01-001': { id: 'I01-001', insel: 1, wichtig: true },
+    'L03-002': { id: 'L03-002', lektion: 3, fakultativ: true, wichtig: true },
   };
   // No current lesson yet: nothing practised, nothing set.
   assert.equal(wichtigeVokabelIds(v, {}, {}), null);

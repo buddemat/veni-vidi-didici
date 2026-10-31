@@ -11,12 +11,13 @@
 // Antwort (Level 1 -> 2) fälschlich auf der Liste.
 export const SCHWACH_BIS_LEVEL = 2;
 
-// Vokabeln nach Lektion gruppiert, je Lektion sortiert nach ID (= Reihenfolge
-// im Buch). Inselwortschatz hat keine Lektionsnummer und fehlt hier.
+// Vokabeln nach Lektion gruppiert, je Lektion sortiert nach ID (= Lern-
+// reihenfolge). Inselwortschatz (`fakultativ`) fehlt hier - er wird (noch) nicht
+// abgefragt.
 export function gruppiereNachLektion(vokabeln) {
   const gruppen = {};
   for (const vokabel of Object.values(vokabeln)) {
-    if (!vokabel.lektion) continue;
+    if (!vokabel.lektion || vokabel.fakultativ) continue;
     if (!gruppen[vokabel.lektion]) gruppen[vokabel.lektion] = [];
     gruppen[vokabel.lektion].push(vokabel);
   }
@@ -88,7 +89,7 @@ export function neuesteLektionAuswahl(vokabeln, fortschritt, profil) {
 
 // Für "Wichtigste Wörter": alle als `wichtig` markierten Vokabeln von
 // Lektion 1 bis zur aktuellen Lektion (wie bei "Neueste Lektion", ggf. nur
-// bis zu deren eingestelltem Wort), in Buchreihenfolge. null, wenn sich
+// bis zu deren eingestelltem Wort), in Lernreihenfolge. null, wenn sich
 // keine aktuelle Lektion bestimmen lässt.
 export function wichtigeVokabelIds(vokabeln, fortschritt, profil) {
   const neueste = neuesteLektionAuswahl(vokabeln, fortschritt, profil);

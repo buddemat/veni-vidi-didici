@@ -531,6 +531,13 @@ function renderKarte() {
   const lemmaKarte = document.createElement('div');
   lemmaKarte.className = 'karte abfrage-lemma';
   lemmaKarte.textContent = vokabel.lemma;
+  // Inselwortschatz ist optional - kleiner Hinweis unter dem Wort.
+  if (vokabel.fakultativ) {
+    const inselHinweis = document.createElement('div');
+    inselHinweis.className = 'hinweis abfrage-insel-hinweis';
+    inselHinweis.textContent = 'Inselwortschatz';
+    lemmaKarte.appendChild(inselHinweis);
+  }
   container.appendChild(lemmaKarte);
 
   const formular = document.createElement('div');

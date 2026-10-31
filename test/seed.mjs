@@ -11,8 +11,5 @@ export const seed = JSON.parse(fs.readFileSync(echteDaten ? echt : beispiel, 'ut
 export const beispielSeed = JSON.parse(fs.readFileSync(beispiel, 'utf8'));
 
 export function alleVokabelnAus(s) {
-  return [
-    ...(s.lektionen || []).flatMap(l => l.vokabeln),
-    ...(s.inselwortschatz || []).flatMap(i => i.vokabeln),
-  ];
+  return (s.lektionen || []).flatMap(l => l.vokabeln);
 }

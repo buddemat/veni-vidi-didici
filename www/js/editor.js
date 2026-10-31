@@ -35,15 +35,14 @@ function loescheVokabel(vokabel) {
 
 // --- Vokabelliste ---
 
+// Je Lektion getrennt: Lektionswortschatz und Inselwortschatz (`fakultativ`).
 function gruppiereAlleVokabeln() {
   const lektionen = {};
   const inseln = {};
   for (const vokabel of Object.values(getStore().vokabeln)) {
-    if (vokabel.lektion) {
-      (lektionen[vokabel.lektion] ??= []).push(vokabel);
-    } else if (vokabel.insel) {
-      (inseln[vokabel.insel] ??= []).push(vokabel);
-    }
+    if (!vokabel.lektion) continue;
+    const gruppen = vokabel.fakultativ ? inseln : lektionen;
+    (gruppen[vokabel.lektion] ??= []).push(vokabel);
   }
   for (const liste of Object.values(lektionen)) liste.sort((a, b) => a.id.localeCompare(b.id));
   for (const liste of Object.values(inseln)) liste.sort((a, b) => a.id.localeCompare(b.id));
@@ -104,29 +103,24 @@ export function renderVokabelliste() {
   const container = document.getElementById('vokabelliste-inhalt');
   container.innerHTML = '';
 
-  const lektionsNummern = Object.keys(lektionen).map(Number).sort((a, b) => a - b);
-  for (const nr of lektionsNummern) {
+  // Inselwortschatz einer Lektion direkt nach ihr.
+  const abschnitt = (titelText, liste) => {
     const karte = document.createElement('div');
     karte.className = 'karte';
     const titel = document.createElement('h3');
-    titel.textContent = `Lektion ${nr} (${lektionen[nr].length} Vokabeln)`;
+    titel.textContent = `${titelText} (${liste.length} Vokabeln)`;
     karte.appendChild(titel);
-    for (const vokabel of lektionen[nr]) karte.appendChild(vokabelZeile(vokabel, true));
+    for (const vokabel of liste) karte.appendChild(vokabelZeile(vokabel, true));
     container.appendChild(karte);
+  };
+  const nummern = [...new Set([...Object.keys(lektionen), ...Object.keys(inseln)].map(Number))]
+    .sort((a, b) => a - b);
+  for (const nr of nummern) {
+    if (lektionen[nr]) abschnitt(`Lektion ${nr}`, lektionen[nr]);
+    if (inseln[nr]) abschnitt(`Inselwortschatz zu Lektion ${nr}`, inseln[nr]);
   }
 
-  const inselNummern = Object.keys(inseln).map(Number).sort((a, b) => a - b);
-  for (const nr of inselNummern) {
-    const karte = document.createElement('div');
-    karte.className = 'karte';
-    const titel = document.createElement('h3');
-    titel.textContent = `Inselwortschatz zu Lektion ${nr} (${inseln[nr].length} Vokabeln, nicht bearbeitbar)`;
-    karte.appendChild(titel);
-    for (const vokabel of inseln[nr]) karte.appendChild(vokabelZeile(vokabel, false));
-    container.appendChild(karte);
-  }
-
-  if (lektionsNummern.length === 0 && inselNummern.length === 0) {
+  if (nummern.length === 0) {
     const hinweis = document.createElement('p');
     hinweis.className = 'hinweis';
     hinweis.textContent = 'Noch keine Vokabeln vorhanden.';
@@ -294,7 +288,18 @@ export function renderEditor() {
   wichtigText.textContent = 'Wichtiges Wort';
   wichtigZeile.append(wichtigCheckbox, wichtigText);
 
-  grunddatenKarte.append(wortartLabel, wortartSelect, lemmaLabel, lemmaInput, wichtigZeile);
+  // Inselwortschatz (optional): steht in der Vokabelliste getrennt
+  // direkt nach seiner Lektion.
+  const optionalZeile = document.createElement('label');
+  optionalZeile.className = 'einstellungen-zeile';
+  const optionalCheckbox = document.createElement('input');
+  optionalCheckbox.type = 'checkbox';
+  optionalCheckbox.checked = !!vokabel?.fakultativ;
+  const optionalText = document.createElement('span');
+  optionalText.textContent = 'Optional (Inselwortschatz)';
+  optionalZeile.append(optionalCheckbox, optionalText);
+
+  grunddatenKarte.append(wortartLabel, wortartSelect, lemmaLabel, lemmaInput, wichtigZeile, optionalZeile);
   mitMikrofon(lemmaInput);
   container.appendChild(grunddatenKarte);
 
@@ -399,6 +404,7 @@ export function renderEditor() {
       formen,
       bedeutungen,
       ...(wichtigCheckbox.checked ? { wichtig: true } : {}),
+      ...(optionalCheckbox.checked ? { fakultativ: true } : {}),
       lektion: vokabel ? vokabel.lektion : lektionNr,
       // Markiert Vokabeln, die über den Editor angelegt/verändert wurden -
       // fehlt bei unangetasteten Seed-Vokabeln. Damit lässt sich später

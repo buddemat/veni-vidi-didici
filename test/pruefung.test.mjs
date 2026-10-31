@@ -304,9 +304,9 @@ test('āiō/ait: required and optional parts containing commas are matched corre
   assert.equal(pruefeAntwort(aio, [], 'aio, er, sie, es sagt').richtig, false);
 });
 
-// Book notation typed literally, parentheses included ("(be)grüßen" as
-// printed for salūtāre) - user feedback 2026-10-29.
-test('meaning typed exactly as printed, with parentheses, is accepted', () => {
+// Meaning typed literally, parentheses included ("(be)grüßen" for
+// salūtāre) - user feedback 2026-10-29.
+test('meaning typed exactly as listed, with parentheses, is accepted', () => {
   const salutare = {
     wortart: 'verb', lemma: 'salūtāre',
     formen: { praesens_1sg: 'salūtō', perfekt_1sg: 'salūtāvī' },
@@ -318,7 +318,7 @@ test('meaning typed exactly as printed, with parentheses, is accepted', () => {
   }
 });
 
-test('every meaning with parentheses is accepted when typed exactly as printed', () => {
+test('every meaning with parentheses is accepted when typed exactly as listed', () => {
   const fehler = [];
   for (const vokabel of alleVokabeln) {
     const felder = aktiveAbfrageFelder(vokabel, alleFelderDerWortart(vokabel.wortart));

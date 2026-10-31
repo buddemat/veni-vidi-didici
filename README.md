@@ -20,7 +20,9 @@ plain HTML/CSS/JavaScript without a framework. The user interface is in German.
 The repository contains only a small example vocabulary
 (`www/assets/vokabeln.beispiel.json`). Put your own vocabulary in
 `www/assets/vokabeln.json` (same format; ignored by Git). If that file is
-missing, the app starts with the example.
+missing, the app starts with the example. Optional words
+("Inselwortschatz") stay in their lesson and are marked with
+`"fakultativ": true`.
 
 On every start, the app compares its stored vocabulary with the shipped file,
 so corrections and new words in an app update reach installed apps: new

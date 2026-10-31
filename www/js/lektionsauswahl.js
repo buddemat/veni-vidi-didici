@@ -3,8 +3,8 @@ import { zeigeScreen } from './screens.js';
 import { starteAbfrage } from './abfrage.js';
 import { gruppiereNachLektion, bauePool } from './schnellstart.js';
 
-// Vokabeln nach Lektion gruppiert, je Lektion sortiert nach ID (= Reihenfolge
-// im Buch). Wird bei jedem Rendern neu aus dem Store aufgebaut, damit später
+// Vokabeln nach Lektion gruppiert, je Lektion sortiert nach ID (= Lern-
+// reihenfolge). Wird bei jedem Rendern neu aus dem Store aufgebaut, damit später
 // im Editor (Schritt 9) hinzugefügte Vokabeln automatisch berücksichtigt werden.
 let gruppenNachLektion = {};
 

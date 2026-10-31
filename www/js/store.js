@@ -39,18 +39,15 @@ function standardProfil() {
   return { name: '', aktuelleLektion: null, aktuelleBisId: null, letzteAbfrage: null };
 }
 
-// Wandelt die lektions-/inselgruppierte Seed-Struktur in eine flache,
-// nach Vokabel-ID indizierte Map um (eine Ebene, einfach zu durchsuchen/speichern).
+// Wandelt die lektionsgruppierte Seed-Struktur in eine flache, nach
+// Vokabel-ID indizierte Map um (eine Ebene, einfach zu durchsuchen/speichern).
+// Inselwortschatz (optional) steht in seiner Lektion, markiert mit
+// `fakultativ: true`.
 function flacheVokabelnAusSeed(seedJson) {
   const vokabeln = {};
   for (const lektion of seedJson.lektionen || []) {
     for (const vokabel of lektion.vokabeln) {
       vokabeln[vokabel.id] = { ...vokabel, lektion: lektion.lektion };
-    }
-  }
-  for (const insel of seedJson.inselwortschatz || []) {
-    for (const vokabel of insel.vokabeln) {
-      vokabeln[vokabel.id] = { ...vokabel, insel: insel.insel, fakultativ: true };
     }
   }
   return vokabeln;

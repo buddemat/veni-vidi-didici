@@ -198,9 +198,9 @@ export function trenneGenusAus(segmente) {
   return { genus, rest };
 }
 
-// Manche Lemmata/Formen/Bedeutungen enthalten Klammer-Zusätze aus dem
-// Vokabelheft - mal reine Grammatik-Hinweise ("vacō (m. Abl.)" = regiert
-// Ablativ), mal optionale Wortbestandteile ("(ver)brennen", "dext(e)ra").
+// Manche Lemmata/Formen/Bedeutungen enthalten Klammer-Zusätze - mal reine
+// Grammatik-Hinweise ("vacō (m. Abl.)" = regiert Ablativ), mal optionale
+// Wortbestandteile ("(ver)brennen", "dext(e)ra").
 // Beides wird durch zwei akzeptierte Varianten abgedeckt: einmal ganz ohne
 // Klammerinhalt ("vacō", "brennen", "dextra") und einmal mit Inhalt, aber
 // ohne die Klammern selbst ("verbrennen", "dextera") - Tippfehlertoleranz
@@ -276,9 +276,9 @@ function klammerVarianten(text, praefixPruefungAktiv) {
     }
   }
 
-  // Und wörtlich wie im Buch, mit Klammern ("(be)grüßen", "der (Haus-)Herr")
-  // - normalisiere() lässt Klammern stehen, die getippte Buch-Notation passt
-  // also genau auf diese Variante.
+  // Und wörtlich mit Klammern ("(be)grüßen", "der (Haus-)Herr") -
+  // normalisiere() lässt Klammern stehen, die so getippte Angabe passt also
+  // genau auf diese Variante.
   varianten.add(bereinigen(text));
 
   return [...varianten];

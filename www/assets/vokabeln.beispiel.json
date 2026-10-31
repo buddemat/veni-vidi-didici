@@ -109,9 +109,18 @@
             { "text": "groß", "typ": "muss" },
             { "text": "bedeutend", "typ": "kann" }
           ]
+        },
+        {
+          "id": "L02-006",
+          "wortart": "substantiv",
+          "lemma": "schola",
+          "formen": { "genitiv_sg": "scholae", "genus": "f" },
+          "bedeutungen": [
+            { "text": "die Schule", "typ": "muss" }
+          ],
+          "fakultativ": true
         }
       ]
     }
-  ],
-  "inselwortschatz": []
+  ]
 }

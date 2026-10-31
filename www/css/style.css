@@ -423,6 +423,12 @@ details .karte {
   padding: 28px var(--abstand);
 }
 
+/* "Inselwortschatz" unter dem abgefragten Wort. */
+.abfrage-insel-hinweis {
+  font-weight: 400;
+  margin-top: 4px;
+}
+
 .checkbox-liste {
   max-height: 320px;
   overflow-y: auto;
