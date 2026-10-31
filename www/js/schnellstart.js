@@ -1,5 +1,6 @@
 // Reine Logik für die Abfrage-Auswahl und die Schnellstart-Modi auf der
-// Startseite ("Wie zuletzt", "Neueste Lektion", "Alle schwachen") - bewusst
+// Startseite ("Wie zuletzt", "Neueste Lektion", "Alle schwachen",
+// "Wichtigste Wörter") - bewusst
 // ohne Abhängigkeit zu Store/DOM, damit sie sich mit Node testen lässt.
 
 // Bis zu diesem Level gilt eine Vokabel, die schon einmal falsch war, als
@@ -83,6 +84,19 @@ export function neuesteLektionAuswahl(vokabeln, fortschritt, profil) {
   }
   const automatisch = zuletztGeuebteLektion(vokabeln, fortschritt);
   return automatisch === null ? null : { lektionen: [automatisch], bisId: null };
+}
+
+// Für "Wichtigste Wörter": alle als `wichtig` markierten Vokabeln von
+// Lektion 1 bis zur aktuellen Lektion (wie bei "Neueste Lektion", ggf. nur
+// bis zu deren eingestelltem Wort), in Buchreihenfolge. null, wenn sich
+// keine aktuelle Lektion bestimmen lässt.
+export function wichtigeVokabelIds(vokabeln, fortschritt, profil) {
+  const neueste = neuesteLektionAuswahl(vokabeln, fortschritt, profil);
+  if (!neueste) return null;
+  const gruppen = gruppiereNachLektion(vokabeln);
+  const bisLektion = neueste.lektionen[0];
+  const lektionen = Object.keys(gruppen).map(Number).filter(nr => nr <= bisLektion);
+  return bauePool(gruppen, { lektionen, bisId: neueste.bisId }).filter(id => vokabeln[id].wichtig);
 }
 
 // Kurzbeschreibung einer Auswahl für die Schnellstart-Knöpfe, z.B. "L23",

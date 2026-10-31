@@ -42,6 +42,7 @@
           "bedeutungen": [
             { "text": "sein", "typ": "muss" }
           ],
+          "wichtig": true,
           "hinweis": "unregelmäßig"
         },
         {

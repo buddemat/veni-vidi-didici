@@ -284,7 +284,17 @@ export function renderEditor() {
   lemmaInput.type = 'text';
   lemmaInput.value = vokabel ? vokabel.lemma : '';
 
-  grunddatenKarte.append(wortartLabel, wortartSelect, lemmaLabel, lemmaInput);
+  // Für den Schnellstart "Wichtigste Wörter".
+  const wichtigZeile = document.createElement('label');
+  wichtigZeile.className = 'einstellungen-zeile';
+  const wichtigCheckbox = document.createElement('input');
+  wichtigCheckbox.type = 'checkbox';
+  wichtigCheckbox.checked = !!vokabel?.wichtig;
+  const wichtigText = document.createElement('span');
+  wichtigText.textContent = 'Wichtiges Wort';
+  wichtigZeile.append(wichtigCheckbox, wichtigText);
+
+  grunddatenKarte.append(wortartLabel, wortartSelect, lemmaLabel, lemmaInput, wichtigZeile);
   mitMikrofon(lemmaInput);
   container.appendChild(grunddatenKarte);
 
@@ -388,6 +398,7 @@ export function renderEditor() {
       lemma,
       formen,
       bedeutungen,
+      ...(wichtigCheckbox.checked ? { wichtig: true } : {}),
       lektion: vokabel ? vokabel.lektion : lektionNr,
       // Markiert Vokabeln, die über den Editor angelegt/verändert wurden -
       // fehlt bei unangetasteten Seed-Vokabeln. Damit lässt sich später

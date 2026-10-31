@@ -2,6 +2,7 @@ import { getStore } from './store.js';
 import { starteRunde } from './lektionsauswahl.js';
 import {
   gruppiereNachLektion, bauePool, schwacheVokabelIds, neuesteLektionAuswahl, beschreibeAuswahl,
+  wichtigeVokabelIds,
 } from './schnellstart.js';
 
 // Ohne gespeicherte Auswahl (noch nie über "Abfrage starten" gestartet)
@@ -19,9 +20,9 @@ function knopf(text, onClick, deaktiviert = false) {
 
 // Schnellstart-Knöpfe: werden bei jedem Anzeigen der Startseite neu
 // aufgebaut, damit Beschriftung (z.B. Anzahl schwacher Vokabeln) und
-// Verfügbarkeit nach einer Runde oder Profil-Änderung stimmen. Alle drei
-// sind immer sichtbar, nicht anwendbare (noch keine Auswahl gespeichert,
-// noch nichts geübt, keine schwachen Vokabeln) nur ausgegraut.
+// Verfügbarkeit nach einer Runde oder Profil-Änderung stimmen. Alle sind
+// immer sichtbar, nicht anwendbare (noch keine Auswahl gespeichert, noch
+// nichts geübt, keine schwachen/wichtigen Vokabeln) nur ausgegraut.
 export function renderSchnellstart() {
   const store = getStore();
   const gruppen = gruppiereNachLektion(store.vokabeln);
@@ -50,7 +51,17 @@ export function renderSchnellstart() {
     starteRunde(schwacheVokabelIds(store.vokabeln, store.fortschritt), abfrageModus, 'alle-richtig');
   }, schwache.length === 0);
 
-  document.getElementById('start-schnellstart-knoepfe').replaceChildren(wieZuletzt, neuesteLektion, alleSchwachen);
+  // Wichtigste Wörter bis zur aktuellen Lektion - wie "Alle schwachen" zum
+  // Festigen: Runde endet erst, wenn jedes einmal richtig war.
+  const wichtige = wichtigeVokabelIds(store.vokabeln, store.fortschritt, store.profil);
+  const wichtigsteWoerter = wichtige
+    ? knopf(`Wichtigste Wörter (${wichtige.length})`, () => {
+      starteRunde(wichtigeVokabelIds(store.vokabeln, store.fortschritt, store.profil), abfrageModus, 'alle-richtig');
+    }, wichtige.length === 0)
+    : knopf('Wichtigste Wörter', () => {}, true);
+
+  document.getElementById('start-schnellstart-knoepfe')
+    .replaceChildren(wieZuletzt, neuesteLektion, alleSchwachen, wichtigsteWoerter);
 }
 
 export function initStartseite() {

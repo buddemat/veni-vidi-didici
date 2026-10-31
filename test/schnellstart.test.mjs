@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   gruppiereNachLektion, bauePool, schwacheVokabelIds, zuletztGeuebteLektion,
-  neuesteLektionAuswahl, beschreibeAuswahl,
+  neuesteLektionAuswahl, beschreibeAuswahl, wichtigeVokabelIds,
 } from '../www/js/schnellstart.js';
 
 // Small vocabulary: L1 with 3, L2 with 2, L5 with 2 words, plus one extra
@@ -88,4 +88,23 @@ test('beschreibeAuswahl: ranges merged, "bis" as number', () => {
   assert.equal(beschreibeAuswahl(gruppen, { lektionen: [2, 1] }), 'L1–2');
   assert.equal(beschreibeAuswahl(gruppen, { lektionen: [1, 2, 5] }), 'L1–2, L5');
   assert.equal(beschreibeAuswahl(gruppen, { lektionen: [5], bisId: 'L05-001' }), 'L5 bis Nr. 1');
+});
+
+test('wichtigeVokabelIds: marked words from lesson 1 up to the current lesson', () => {
+  const v = {
+    'L01-001': { id: 'L01-001', lektion: 1, wichtig: true },
+    'L01-002': { id: 'L01-002', lektion: 1 },
+    'L02-001': { id: 'L02-001', lektion: 2, wichtig: true },
+    'L02-002': { id: 'L02-002', lektion: 2, wichtig: true },
+    'L03-001': { id: 'L03-001', lektion: 3, wichtig: true },
+    'I01-001': { id: 'I01-001', insel: 1, wichtig: true },
+  };
+  // No current lesson yet: nothing practised, nothing set.
+  assert.equal(wichtigeVokabelIds(v, {}, {}), null);
+  // Current lesson set in the profile, optionally only up to a word.
+  assert.deepEqual(wichtigeVokabelIds(v, {}, { aktuelleLektion: 2 }), ['L01-001', 'L02-001', 'L02-002']);
+  assert.deepEqual(wichtigeVokabelIds(v, {}, { aktuelleLektion: 2, aktuelleBisId: 'L02-001' }), ['L01-001', 'L02-001']);
+  // Automatic: highest lesson practised so far.
+  assert.deepEqual(wichtigeVokabelIds(v, { 'L01-002': { zuletzt: 5 } }, {}), ['L01-001']);
+  assert.deepEqual(wichtigeVokabelIds(v, {}, { aktuelleLektion: 3 }), ['L01-001', 'L02-001', 'L02-002', 'L03-001']);
 });
