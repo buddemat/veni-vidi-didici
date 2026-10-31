@@ -1,8 +1,8 @@
 import { getStore } from './store.js';
 import { starteRunde } from './lektionsauswahl.js';
 import {
-  gruppiereNachLektion, bauePool, schwacheVokabelIds, neuesteLektionAuswahl, beschreibeAuswahl,
-  wichtigeVokabelIds,
+  gruppiereNachLektion, gruppiereInselNachLektion, bauePool, schwacheVokabelIds, neuesteLektionAuswahl,
+  beschreibeAuswahl, wichtigeVokabelIds,
 } from './schnellstart.js';
 
 // Ohne gespeicherte Auswahl (noch nie über "Abfrage starten" gestartet)
@@ -26,22 +26,27 @@ function knopf(text, onClick, deaktiviert = false) {
 export function renderSchnellstart() {
   const store = getStore();
   const gruppen = gruppiereNachLektion(store.vokabeln);
+  const inselGruppen = gruppiereInselNachLektion(store.vokabeln);
   const letzte = store.profil.letzteAbfrage || null;
   const abfrageModus = letzte?.abfrageModus || STANDARD_ABFRAGEMODUS;
   const rundenende = letzte?.rundenende || STANDARD_RUNDENENDE;
+  // Ohne/mit/nur Inselwortschatz: wie bei der letzten Auswahl.
+  const inselwortschatz = letzte?.inselwortschatz || 'ohne';
 
-  const letztePool = letzte ? bauePool(gruppen, letzte) : [];
+  const letztePool = letzte ? bauePool(gruppen, letzte, inselGruppen) : [];
   const wieZuletzt = letztePool.length > 0
     ? knopf(`Wie zuletzt (${beschreibeAuswahl(gruppen, letzte)})`, () => {
-      starteRunde(bauePool(gruppen, letzte), abfrageModus, rundenende);
+      starteRunde(bauePool(gruppen, letzte, inselGruppen), abfrageModus, rundenende);
     })
     : knopf('Wie zuletzt', () => {}, true);
 
-  const neueste = neuesteLektionAuswahl(store.vokabeln, store.fortschritt, store.profil);
+  const neuesteGefunden = neuesteLektionAuswahl(store.vokabeln, store.fortschritt, store.profil);
+  const neueste = neuesteGefunden && { ...neuesteGefunden, inselwortschatz };
+  const neuestePool = neueste ? bauePool(gruppen, neueste, inselGruppen) : [];
   const neuesteLektion = neueste
     ? knopf(`Neueste Lektion (${beschreibeAuswahl(gruppen, neueste)})`, () => {
-      starteRunde(bauePool(gruppen, neueste), abfrageModus, rundenende);
-    })
+      starteRunde(bauePool(gruppen, neueste, inselGruppen), abfrageModus, rundenende);
+    }, neuestePool.length === 0)
     : knopf('Neueste Lektion', () => {}, true);
 
   // Bei schwachen Vokabeln geht es ums Festigen - die Runde endet erst,
@@ -53,10 +58,12 @@ export function renderSchnellstart() {
 
   // Wichtigste Wörter bis zur aktuellen Lektion - wie "Alle schwachen" zum
   // Festigen: Runde endet erst, wenn jedes einmal richtig war.
-  const wichtige = wichtigeVokabelIds(store.vokabeln, store.fortschritt, store.profil);
+  const wichtige = wichtigeVokabelIds(store.vokabeln, store.fortschritt, store.profil, inselwortschatz);
   const wichtigsteWoerter = wichtige
     ? knopf(`Wichtigste Wörter (${wichtige.length})`, () => {
-      starteRunde(wichtigeVokabelIds(store.vokabeln, store.fortschritt, store.profil), abfrageModus, 'alle-richtig');
+      starteRunde(
+        wichtigeVokabelIds(store.vokabeln, store.fortschritt, store.profil, inselwortschatz), abfrageModus, 'alle-richtig'
+      );
     }, wichtige.length === 0)
     : knopf('Wichtigste Wörter', () => {}, true);
 

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   gruppiereNachLektion, bauePool, schwacheVokabelIds, zuletztGeuebteLektion,
-  neuesteLektionAuswahl, beschreibeAuswahl, wichtigeVokabelIds,
+  neuesteLektionAuswahl, beschreibeAuswahl, wichtigeVokabelIds, gruppiereInselNachLektion,
 } from '../www/js/schnellstart.js';
 
 // Small vocabulary: L1 with 3, L2 with 2, L5 with 2 words, plus one optional
@@ -110,4 +110,54 @@ test('wichtigeVokabelIds: marked words from lesson 1 up to the current lesson', 
   // Automatic: highest lesson practised so far.
   assert.deepEqual(wichtigeVokabelIds(v, { 'L01-002': { zuletzt: 5 } }, {}), ['L01-001']);
   assert.deepEqual(wichtigeVokabelIds(v, {}, { aktuelleLektion: 3 }), ['L01-001', 'L02-001', 'L02-002', 'L03-001']);
+});
+
+// --- Inselwortschatz: without (default) / with / only ---
+
+const mitInsel = {
+  'L01-001': { id: 'L01-001', lektion: 1, wichtig: true },
+  'L01-002': { id: 'L01-002', lektion: 1 },
+  'L01-003': { id: 'L01-003', lektion: 1, fakultativ: true, wichtig: true },
+  'L02-001': { id: 'L02-001', lektion: 2 },
+  'L02-002': { id: 'L02-002', lektion: 2 },
+  'L02-003': { id: 'L02-003', lektion: 2, fakultativ: true },
+  'L03-001': { id: 'L03-001', lektion: 3 },
+};
+const lektionsGruppen = gruppiereNachLektion(mitInsel);
+const inselGruppen = gruppiereInselNachLektion(mitInsel);
+
+test('gruppiereInselNachLektion: only optional words, by lesson', () => {
+  assert.deepEqual(Object.keys(inselGruppen), ['1', '2']);
+  assert.deepEqual(inselGruppen[2].map(v => v.id), ['L02-003']);
+});
+
+test('bauePool: Inselwortschatz without, with and only', () => {
+  const auswahl = { lektionen: [1, 2, 3] };
+  assert.deepEqual(bauePool(lektionsGruppen, auswahl, inselGruppen),
+    ['L01-001', 'L01-002', 'L02-001', 'L02-002', 'L03-001']);
+  assert.deepEqual(bauePool(lektionsGruppen, { ...auswahl, inselwortschatz: 'mit' }, inselGruppen),
+    ['L01-001', 'L01-002', 'L01-003', 'L02-001', 'L02-002', 'L02-003', 'L03-001']);
+  assert.deepEqual(bauePool(lektionsGruppen, { ...auswahl, inselwortschatz: 'nur' }, inselGruppen),
+    ['L01-003', 'L02-003']);
+  // lesson without Inselwortschatz: "only" gives an empty pool
+  assert.deepEqual(bauePool(lektionsGruppen, { lektionen: [3], inselwortschatz: 'nur' }, inselGruppen), []);
+});
+
+test('bauePool: highest lesson only up to a word - its Inselwortschatz not yet', () => {
+  const auswahl = { lektionen: [1, 2], bisId: 'L02-001' };
+  assert.deepEqual(bauePool(lektionsGruppen, { ...auswahl, inselwortschatz: 'mit' }, inselGruppen),
+    ['L01-001', 'L01-002', 'L01-003', 'L02-001']);
+  assert.deepEqual(bauePool(lektionsGruppen, { ...auswahl, inselwortschatz: 'nur' }, inselGruppen), ['L01-003']);
+  // "bis" pointing at the lesson's last word still counts as up to a word
+  assert.deepEqual(bauePool(lektionsGruppen, { lektionen: [2], bisId: 'L02-002', inselwortschatz: 'nur' }, inselGruppen), []);
+});
+
+test('wichtigeVokabelIds and beschreibeAuswahl follow the Inselwortschatz choice', () => {
+  const profil = { aktuelleLektion: 2 };
+  assert.deepEqual(wichtigeVokabelIds(mitInsel, {}, profil), ['L01-001']);
+  assert.deepEqual(wichtigeVokabelIds(mitInsel, {}, profil, 'mit'), ['L01-001', 'L01-003']);
+  assert.deepEqual(wichtigeVokabelIds(mitInsel, {}, profil, 'nur'), ['L01-003']);
+  assert.equal(beschreibeAuswahl(lektionsGruppen, { lektionen: [2], inselwortschatz: 'mit' }), 'L2 + Inselwortschatz');
+  assert.equal(beschreibeAuswahl(lektionsGruppen, { lektionen: [1, 2], inselwortschatz: 'nur' }), 'L1–2, nur Inselwortschatz');
+  assert.equal(beschreibeAuswahl(lektionsGruppen, { lektionen: [2] }), 'L2');
 });

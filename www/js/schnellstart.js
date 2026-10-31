@@ -12,12 +12,21 @@
 export const SCHWACH_BIS_LEVEL = 2;
 
 // Vokabeln nach Lektion gruppiert, je Lektion sortiert nach ID (= Lern-
-// reihenfolge). Inselwortschatz (`fakultativ`) fehlt hier - er wird (noch) nicht
-// abgefragt.
+// reihenfolge). Ohne Inselwortschatz (`fakultativ`) - der ist optional und
+// wird nur auf Wunsch abgefragt (siehe gruppiereInselNachLektion, bauePool).
 export function gruppiereNachLektion(vokabeln) {
+  return gruppiere(vokabeln, v => !v.fakultativ);
+}
+
+// Nur der Inselwortschatz, nach Lektion gruppiert.
+export function gruppiereInselNachLektion(vokabeln) {
+  return gruppiere(vokabeln, v => !!v.fakultativ);
+}
+
+function gruppiere(vokabeln, filter) {
   const gruppen = {};
   for (const vokabel of Object.values(vokabeln)) {
-    if (!vokabel.lektion || vokabel.fakultativ) continue;
+    if (!vokabel.lektion || !filter(vokabel)) continue;
     if (!gruppen[vokabel.lektion]) gruppen[vokabel.lektion] = [];
     gruppen[vokabel.lektion].push(vokabel);
   }
@@ -27,22 +36,24 @@ export function gruppiereNachLektion(vokabeln) {
   return gruppen;
 }
 
-// Pool (Liste von Vokabel-IDs) aus einer Auswahl { lektionen, bisId }:
-// alle Vokabeln der gewählten Lektionen, bei der höchsten davon optional nur
-// bis einschließlich bisId. Nicht (mehr) vorhandene Lektionen werden
-// ignoriert, ebenso eine bisId, die nicht in dieser Lektion liegt.
-export function bauePool(gruppen, { lektionen, bisId = null }) {
+// Pool (Liste von Vokabel-IDs) aus einer Auswahl { lektionen, bisId,
+// inselwortschatz }: alle Vokabeln der gewählten Lektionen, bei der höchsten
+// davon optional nur bis einschließlich bisId. Nicht (mehr) vorhandene
+// Lektionen werden ignoriert, ebenso eine bisId, die nicht in dieser Lektion
+// liegt. `inselwortschatz`: 'ohne' (Standard), 'mit' oder 'nur' - der
+// Inselwortschatz einer Lektion folgt deren Wörtern; ist die höchste
+// Lektion nur bis bisId gewählt, gehört ihr Inselwortschatz noch nicht dazu.
+export function bauePool(gruppen, { lektionen, bisId = null, inselwortschatz = 'ohne' }, inselGruppen = {}) {
   const vorhanden = [...new Set(lektionen)].filter(nr => gruppen[nr]).sort((a, b) => a - b);
   if (vorhanden.length === 0) return [];
   const hoechste = vorhanden[vorhanden.length - 1];
   const pool = [];
   for (const nr of vorhanden) {
     let liste = gruppen[nr];
-    if (nr === hoechste && bisId) {
-      const index = liste.findIndex(v => v.id === bisId);
-      if (index !== -1) liste = liste.slice(0, index + 1);
-    }
-    pool.push(...liste.map(v => v.id));
+    const bisGilt = nr === hoechste && bisId && liste.some(v => v.id === bisId);
+    if (bisGilt) liste = liste.slice(0, liste.findIndex(v => v.id === bisId) + 1);
+    if (inselwortschatz !== 'nur') pool.push(...liste.map(v => v.id));
+    if (inselwortschatz !== 'ohne' && !bisGilt) pool.push(...(inselGruppen[nr] || []).map(v => v.id));
   }
   return pool;
 }
@@ -89,21 +100,23 @@ export function neuesteLektionAuswahl(vokabeln, fortschritt, profil) {
 
 // Für "Wichtigste Wörter": alle als `wichtig` markierten Vokabeln von
 // Lektion 1 bis zur aktuellen Lektion (wie bei "Neueste Lektion", ggf. nur
-// bis zu deren eingestelltem Wort), in Lernreihenfolge. null, wenn sich
-// keine aktuelle Lektion bestimmen lässt.
-export function wichtigeVokabelIds(vokabeln, fortschritt, profil) {
+// bis zu deren eingestelltem Wort), in Lernreihenfolge; Inselwortschatz je
+// nach `inselwortschatz` ('ohne'/'mit'/'nur', wie bei bauePool). null, wenn
+// sich keine aktuelle Lektion bestimmen lässt.
+export function wichtigeVokabelIds(vokabeln, fortschritt, profil, inselwortschatz = 'ohne') {
   const neueste = neuesteLektionAuswahl(vokabeln, fortschritt, profil);
   if (!neueste) return null;
   const gruppen = gruppiereNachLektion(vokabeln);
   const bisLektion = neueste.lektionen[0];
   const lektionen = Object.keys(gruppen).map(Number).filter(nr => nr <= bisLektion);
-  return bauePool(gruppen, { lektionen, bisId: neueste.bisId }).filter(id => vokabeln[id].wichtig);
+  const auswahl = { lektionen, bisId: neueste.bisId, inselwortschatz };
+  return bauePool(gruppen, auswahl, gruppiereInselNachLektion(vokabeln)).filter(id => vokabeln[id].wichtig);
 }
 
 // Kurzbeschreibung einer Auswahl für die Schnellstart-Knöpfe, z.B. "L23",
-// "L20–24", "L5, L7" oder "L24 bis Nr. 12". Aufeinanderfolgende Lektionen
-// werden zu Bereichen zusammengefasst.
-export function beschreibeAuswahl(gruppen, { lektionen, bisId = null }) {
+// "L20–24", "L5, L7", "L24 bis Nr. 12" oder "L6 + Inselwortschatz".
+// Aufeinanderfolgende Lektionen werden zu Bereichen zusammengefasst.
+export function beschreibeAuswahl(gruppen, { lektionen, bisId = null, inselwortschatz = 'ohne' }) {
   const nummern = [...new Set(lektionen)].filter(nr => gruppen[nr]).sort((a, b) => a - b);
   const bereiche = [];
   for (const nr of nummern) {
@@ -116,5 +129,7 @@ export function beschreibeAuswahl(gruppen, { lektionen, bisId = null }) {
     const index = gruppen[nummern[nummern.length - 1]].findIndex(v => v.id === bisId);
     if (index !== -1) text += ` bis Nr. ${index + 1}`;
   }
+  if (inselwortschatz === 'mit') text += ' + Inselwortschatz';
+  if (inselwortschatz === 'nur') text += ', nur Inselwortschatz';
   return text;
 }
