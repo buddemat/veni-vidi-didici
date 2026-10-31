@@ -18,6 +18,13 @@ function istCapacitor() {
   return typeof window !== 'undefined' && !!window.Capacitor;
 }
 
+// Fokussiert ein Eingabefeld nur im Browser (damit Enter direkt prüft), auf
+// dem Handy NICHT: dort würde der Fokus die Bildschirmtastatur öffnen, die
+// dann den "Prüfen"-Knopf verdeckt. Wer tippen will, tippt selbst ins Feld.
+export function eingabeFokussieren(input) {
+  if (!istCapacitor()) input.focus();
+}
+
 function erkenneSpracheMock(bisherigerWert) {
   const testtext = prompt('Mock-Spracheingabe (Testtext eingeben):', bisherigerWert || '');
   return testtext; // null bei "Abbrechen" - vom Aufrufer unverändert zu lassen
@@ -74,7 +81,7 @@ function mikrofonKnopfErstellen(input) {
       if (ergebnis !== null) {
         input.value = ergebnis;
         input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.focus();
+        eingabeFokussieren(input);
       }
     } catch (fehler) {
       console.error('Spracheingabe fehlgeschlagen:', fehler);

@@ -3,7 +3,7 @@ import { getAktuellenPool, getAktuellenAbfrageModus, getAktuellesRundenende } fr
 import { zeigeScreen } from './screens.js';
 import { abfrageLabel, rueckfrageLabel } from './einstellungen.js';
 import { pruefeAntwort, normalisiere, aktiveAbfrageFelder } from './pruefung.js';
-import { mitMikrofon } from './spracheingabe.js';
+import { mitMikrofon, eingabeFokussieren } from './spracheingabe.js';
 import { baueStapel, wiederEinreihen } from './ziehung.js';
 
 const GENUS_TEXT = { m: 'Maskulinum (m)', f: 'Femininum (f)', n: 'Neutrum (n)' };
@@ -363,7 +363,7 @@ function rueckfrageAnzeigen(vokabel, abfrageFelder, fehlendeListe, bisherigerRoh
       weiterButton.click();
     }
   });
-  eingabe.focus();
+  eingabeFokussieren(eingabe);
 }
 
 // Baut den kombinierten Antworttext für die (Neu-)Prüfung. Im Normalfall
@@ -575,7 +575,7 @@ function renderKarte() {
       pruefenButton.click();
     }
   });
-  eingabe.focus();
+  eingabeFokussieren(eingabe);
 }
 
 // Prüft, ob die Runde laut der bei der Lektionsauswahl gewählten
