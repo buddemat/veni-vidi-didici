@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { migriereStore, aktualisiereWortschatz, setzeWortschatzZurueck, neuerFortschrittEintrag } from '../www/js/store.js';
+import {
+  migriereStore, aktualisiereWortschatz, setzeWortschatzZurueck, neuerFortschrittEintrag, setzeFortschrittZurueck,
+} from '../www/js/store.js';
 import { seed } from './seed.mjs';
 
 const auswahl = { modus: 'einzel', lektionen: [23], bisId: null, abfrageModus: 'gewichtet', rundenende: 'alle-einmal' };
@@ -152,4 +154,20 @@ test('setzeWortschatzZurueck: unchanged vocabulary changes nothing', () => {
   const vorher = JSON.stringify(store);
   assert.deepEqual(setzeWortschatzZurueck(store, seed), { zurueckgesetzt: 0, entfernt: 0, wiederhergestellt: 0 });
   assert.equal(JSON.stringify(store), vorher);
+});
+
+// "Profil zurücksetzen": all progress gone, everything else stays.
+test('setzeFortschrittZurueck: every word new again, profile and settings kept', () => {
+  const geuebt = { level: 3, fehler: 2, zuletzt: 1000, rueckfragen: 1 };
+  const store = {
+    vokabeln: { 'L01-001': sol, 'L01-002': luna },
+    fortschritt: { 'L01-001': geuebt, 'L01-002': neuerFortschrittEintrag(), 'L09-001': geuebt },
+    profil: { name: 'A', aktuelleLektion: 3, aktuelleBisId: null, letzteAbfrage: auswahl },
+    einstellungen: { rueckfragen_aktiv: true },
+  };
+  assert.equal(setzeFortschrittZurueck(store), 1);
+  assert.deepEqual(store.fortschritt, { 'L01-001': neuerFortschrittEintrag(), 'L01-002': neuerFortschrittEintrag() });
+  assert.deepEqual(store.profil, { name: 'A', aktuelleLektion: 3, aktuelleBisId: null, letzteAbfrage: auswahl });
+  assert.deepEqual(store.einstellungen, { rueckfragen_aktiv: true });
+  assert.deepEqual(Object.keys(store.vokabeln), ['L01-001', 'L01-002']);
 });

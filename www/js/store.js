@@ -199,6 +199,19 @@ export function setzeWortschatzZurueck(store, seedJson) {
   return anzahl;
 }
 
+// "Profil zurücksetzen": löscht den gesamten Lernfortschritt - jede Vokabel
+// gilt wieder als neu (auch nicht mehr schwach). Name, aktuelle Lektion,
+// letzte Auswahl und Einstellungen bleiben, ebenso der Wortschatz. Gibt die
+// Anzahl der Vokabeln zurück, die schon geübt waren.
+export function setzeFortschrittZurueck(store) {
+  const geuebt = Object.keys(store.vokabeln).filter(id => store.fortschritt[id]?.zuletzt > 0).length;
+  store.fortschritt = {};
+  for (const id of Object.keys(store.vokabeln)) {
+    store.fortschritt[id] = neuerFortschrittEintrag();
+  }
+  return geuebt;
+}
+
 // Haelt den geladenen Store im Speicher, damit ihn alle Screens ueber
 // getStore()/persistStore() gemeinsam nutzen koennen, ohne ihn
 // durchzureichen oder bei jedem Zugriff neu aus localStorage zu lesen.
@@ -231,6 +244,16 @@ export function kannWortschatzZuruecksetzen() {
 // Store anzufassen.
 export function vorschauWortschatzZuruecksetzen() {
   return setzeWortschatzZurueck(JSON.parse(JSON.stringify(aktuellerStore)), mitgelieferterWortschatz);
+}
+
+export function anzahlGeuebterVokabeln() {
+  return Object.keys(aktuellerStore.vokabeln).filter(id => aktuellerStore.fortschritt[id]?.zuletzt > 0).length;
+}
+
+export function fortschrittZuruecksetzen() {
+  const geuebt = setzeFortschrittZurueck(aktuellerStore);
+  persistStore();
+  return geuebt;
 }
 
 export function wortschatzZuruecksetzen() {

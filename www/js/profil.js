@@ -1,4 +1,6 @@
-import { getStore, persistStore, exportiereProfil, importiereProfil } from './store.js';
+import {
+  getStore, persistStore, exportiereProfil, importiereProfil, anzahlGeuebterVokabeln, fortschrittZuruecksetzen,
+} from './store.js';
 import { initExportKnopf, initImportKnopf } from './datenaustausch.js';
 import { renderEinstellungen } from './einstellungen.js';
 import { gruppiereNachLektion, zuletztGeuebteLektion } from './schnellstart.js';
@@ -88,5 +90,28 @@ export function initProfil() {
     alert('Profil importiert (Name, Fortschritt und Einstellungen wurden ersetzt).');
   });
 
+  document.getElementById('profil-zuruecksetzen-button').addEventListener('click', () => {
+    if (fragProfilZuruecksetzen()) renderAktuelleLektion();
+  });
+
   aktualisiereBegruessung();
+}
+
+// Warnung vor dem Löschen des Lernfortschritts - lässt sich nur über eine
+// vorher exportierte Profil-Datei rückgängig machen.
+function fragProfilZuruecksetzen() {
+  const geuebt = anzahlGeuebterVokabeln();
+  if (geuebt === 0) {
+    alert('Es gibt noch keinen Lernfortschritt zum Zurücksetzen.');
+    return false;
+  }
+  const frage = 'Profil zurücksetzen?\n\n'
+    + `Der gesamte Lernfortschritt wird gelöscht: ${geuebt} schon geübte Vokabel(n) gelten danach wieder `
+    + 'als neu, auch die schwachen Wörter sind weg. Name, aktuelle Lektion und Einstellungen bleiben erhalten.\n\n'
+    + 'Das lässt sich nicht rückgängig machen! Tipp: Vorher "Profil exportieren" - mit "Profil importieren" '
+    + 'kommt der Fortschritt dann wieder zurück.';
+  if (!confirm(frage)) return false;
+  fortschrittZuruecksetzen();
+  alert('Der Lernfortschritt wurde zurückgesetzt.');
+  return true;
 }
