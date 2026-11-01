@@ -404,7 +404,7 @@ function artikelUndRest(normalisierterText) {
 }
 
 // Bei lateinischen Werten (Lemma, Formen) trägt die Endung die Grammatik -
-// ein "Tippfehler" dort ist meist eine falsche Form ("fugeo" statt "fugio",
+// ein "Tippfehler" dort ist meist eine falsche Form ("fodeo" statt "fodio",
 // "fugari" statt "fugavi", "amicarum" statt "amicorum"). Deshalb gilt die
 // Toleranz dort nur vor den letzten LATEIN_ENDUNG_LAENGE Buchstaben jedes
 // Worts: Die Wortzahl muss gleich sein, die Endungen exakt.
@@ -425,7 +425,7 @@ function besteVarianzDistanz(sollVarianten, segment, latein = false) {
 }
 
 // Wie besteVarianzDistanz, aber mit der passenden Variante selbst - für die
-// Tippfehler-Anzeige ("fliehan -> fliehen"): { distanz, variante } oder null.
+// Tippfehler-Anzeige ("grabem -> graben"): { distanz, variante } oder null.
 function besteVariante(sollVarianten, segment, latein = false) {
   const nb = normalisiere(segment);
   let beste = null;
@@ -600,6 +600,42 @@ function fasseKommaWerteZusammen(segmente, erwarteteWerte) {
   return ergebnis;
 }
 
+// Kasus-/Numerus-Angabe vor einer Form im Hinweis, z.B. "Dat.", "Abl. Sg.",
+// "Nom./Akk. Pl. n", "Nom. Pl. auch", "Adv." - danach folgt die Form selbst.
+const KASUS = '(?:Nom|Gen|Dat|Akk|Abl|Vok)\\.';
+const HINWEIS_FORM_LABEL = new RegExp(
+  `^(?:${KASUS}(?:\\/${KASUS})*(?:\\s*(?:Sg|Pl)\\.)?|Pl\\.|Adv\\.)(?:\\s+n\\b)?(?:\\s+auch\\b)?\\s+`
+);
+
+// Angaben, die aus dem Lern-Hinweis stammen (z.B. "Dat. neutrī",
+// "Fragewort: erwartet die Antwort nein"): Der Hinweis wird nicht abgefragt, aber wer etwas
+// daraus mit nennt, soll dafür kein "Das passt nicht dazu" bekommen - wie bei
+// KANN-Bedeutungen ungewertete Kandidaten. Akzeptiert wird jeder Teil
+// (getrennt an ";" und ","), als Ganzes und ohne Kasus-Angabe ("neutrī");
+// bei "Erklärung: Text" auch nur der Text. Teile mit
+// Kasus-Angabe sind lateinische Formen - dort gilt die strenge
+// Endungs-Prüfung (siehe lateinEndungenGleich).
+export function hinweisAngaben(hinweis) {
+  if (!hinweis) return [];
+  const angaben = [];
+  for (const teil of hinweis.replace(/["„“”]/g, '').split(';')) {
+    const ganzerTeil = teil.trim();
+    if (!ganzerTeil) continue;
+    const stuecke = ganzerTeil.split(',').map(t => t.trim()).filter(Boolean)
+      .map(stueck => ({ stueck, form: stueck.replace(HINWEIS_FORM_LABEL, '') }));
+    const mitForm = stuecke.some(({ stueck, form }) => form !== stueck);
+    angaben.push({ text: ganzerTeil, latein: mitForm });
+    const doppelpunkt = ganzerTeil.indexOf(':');
+    if (doppelpunkt !== -1) angaben.push({ text: ganzerTeil.slice(doppelpunkt + 1).trim(), latein: false });
+    if (stuecke.length === 1 && !mitForm) continue;
+    for (const { stueck, form } of stuecke) {
+      if (stuecke.length > 1) angaben.push({ text: stueck, latein: form !== stueck });
+      if (form !== stueck) angaben.push({ text: form, latein: true });
+    }
+  }
+  return angaben.filter(a => a.text);
+}
+
 // Welche der in den Einstellungen aktivierten Felder bei dieser Vokabel
 // tatsächlich abgefragt werden: nur die, die sie auch hat - z.B. hat das
 // indeklinable "nefās" keinen Genitiv.
@@ -650,6 +686,9 @@ export function pruefeAntwort(vokabel, abfrageFelder, rohtext, tippfehlerErlaubt
     ...kannBedeutungen.map((b, index) => ({
       typ: 'bedeutung-kann', index, sollVarianten: sollVarianten(b.text, istVerb),
     })),
+    ...hinweisAngaben(vokabel.hinweis).map(({ text, latein }) => ({
+      typ: 'hinweis', latein, sollVarianten: sollVarianten(text),
+    })),
   ];
 
   // Segmente, die als Ganzes zu nichts Erwartetem passen, versuchsweise an
@@ -673,8 +712,8 @@ export function pruefeAntwort(vokabel, abfrageFelder, rohtext, tippfehlerErlaubt
   const zuordnung = ordneZu(erwarteteWerte, segmente);
   const belegteSegmente = new Set(zuordnung.values());
 
-  // Per Tippfehlertoleranz akzeptierte Angaben, zum Anzeigen ("fliehan ->
-  // fliehen"), in der Reihenfolge der Antwort. Reine Normalisierung
+  // Per Tippfehlertoleranz akzeptierte Angaben, zum Anzeigen ("grabem ->
+  // graben"), in der Reihenfolge der Antwort. Reine Normalisierung
   // (Makronen, ä/ae, u/v, i/j) zählt nicht als Tippfehler - Distanz 0.
   const tippfehler = [...zuordnung]
     .map(([ei, si]) => ({ si, beste: besteVariante(erwarteteWerte[ei].sollVarianten, segmente[si], erwarteteWerte[ei].latein) }))

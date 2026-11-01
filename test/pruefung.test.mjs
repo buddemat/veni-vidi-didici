@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pruefeAntwort, aktiveAbfrageFelder, sollVarianten, kombiniereRohtext } from '../www/js/pruefung.js';
+import { pruefeAntwort, aktiveAbfrageFelder, sollVarianten, kombiniereRohtext, hinweisAngaben } from '../www/js/pruefung.js';
 import { seed, beispielSeed, alleVokabelnAus } from './seed.mjs';
 
 const alleVokabeln = alleVokabelnAus(seed);
@@ -475,62 +475,57 @@ test('article follow-up works when the gender is attached to the meaning', () =>
   }
 });
 
-const fugere = {
+const fodere = {
   wortart: 'verb',
-  lemma: 'fugere',
-  formen: { praesens_1sg: 'fugiō (m. Akk.)', perfekt_1sg: 'fūgī' },
-  bedeutungen: [{ text: 'fliehen (vor)', typ: 'muss' }],
+  lemma: 'fodere',
+  formen: { praesens_1sg: 'fodiō', perfekt_1sg: 'fōdī' },
+  bedeutungen: [{ text: 'graben (nach)', typ: 'muss' }],
 };
-const amicus = {
+const agricola = {
   wortart: 'substantiv',
-  lemma: 'amīcus',
-  formen: { genitiv_sg: 'amīcī', genus: 'm', genitiv_pl: 'amīcōrum' },
-  bedeutungen: [{ text: 'der Freund', typ: 'muss' }],
+  lemma: 'agricola',
+  formen: { genitiv_sg: 'agricolae', genus: 'm', genitiv_pl: 'agricolārum' },
+  bedeutungen: [{ text: 'der Landwirt', typ: 'muss' }],
 };
 
-test('no typo tolerance in the ending of Latin forms (fugeo is not fugio)', () => {
-  assert.equal(pruefeAntwort(fugere, ['praesens_1sg', 'perfekt_1sg'], 'fugere, fugio, fugi, fliehen').richtig, true);
-  assert.equal(pruefeAntwort(fugere, ['praesens_1sg', 'perfekt_1sg'], 'fugere, fugeo, fugi, fliehen').richtig, false);
-  assert.equal(pruefeAntwort(amicus, ['genitiv_pl'], 'amicus, amicarum, der Freund').richtig, false);
-  // The lemma is Latin as well: "fugare" is a different verb.
-  assert.equal(pruefeAntwort(fugere, ['praesens_1sg', 'perfekt_1sg'], 'fugare, fugio, fugi, fliehen').richtig, false);
+test('no typo tolerance in the ending of Latin forms (fodeo is not fodio)', () => {
+  const felder = ['praesens_1sg', 'perfekt_1sg'];
+  assert.equal(pruefeAntwort(fodere, felder, 'fodere, fodio, fodi, graben').richtig, true);
+  assert.equal(pruefeAntwort(fodere, felder, 'fodere, fodeo, fodi, graben').richtig, false);
+  assert.equal(pruefeAntwort(agricola, ['genitiv_pl'], 'agricola, agricolorum, der Landwirt').richtig, false);
+  // The lemma is Latin as well.
+  assert.equal(pruefeAntwort(fodere, felder, 'fodare, fodio, fodi, graben').richtig, false);
 });
 
 test('typos in the stem of Latin forms and in German meanings are still tolerated', () => {
-  assert.equal(pruefeAntwort(amicus, ['genitiv_pl'], 'amicus, anicorum, der Freund').richtig, true);
-  assert.equal(pruefeAntwort(fugere, ['praesens_1sg', 'perfekt_1sg'], 'fugere, fugio, fugi, fliehan').richtig, true);
+  assert.equal(pruefeAntwort(agricola, ['genitiv_pl'], 'agricola, acricolarum, der Landwirt').richtig, true);
+  assert.equal(pruefeAntwort(fodere, ['praesens_1sg', 'perfekt_1sg'], 'fodere, fodio, fodi, grabem').richtig, true);
 });
 
 test('tolerated typos are reported, normalisation differences are not', () => {
   const felder = ['praesens_1sg', 'perfekt_1sg'];
-  assert.deepEqual(pruefeAntwort(fugere, felder, 'fugere, fugio, fugi, fliehan').tippfehler,
-    [{ getippt: 'fliehan', soll: 'fliehen' }]);
-  assert.deepEqual(pruefeAntwort(amicus, ['genitiv_pl'], 'anicus, anicorum, der Freumd').tippfehler, [
-    { getippt: 'anicus', soll: 'amīcus' },
-    { getippt: 'anicorum', soll: 'amīcōrum' },
-    { getippt: 'der Freumd', soll: 'der Freund' },
+  assert.deepEqual(pruefeAntwort(fodere, felder, 'fodere, fodio, fodi, grabem').tippfehler,
+    [{ getippt: 'grabem', soll: 'graben' }]);
+  assert.deepEqual(pruefeAntwort(agricola, ['genitiv_pl'], 'acricola, acricolarum, der Lamdwirt').tippfehler, [
+    { getippt: 'acricola', soll: 'agricola' },
+    { getippt: 'acricolarum', soll: 'agricolārum' },
+    { getippt: 'der Lamdwirt', soll: 'der Landwirt' },
   ]);
-  assert.deepEqual(pruefeAntwort(fugere, felder, 'fugere, fugiō, fūgī, fliehen vor').tippfehler, []);
-  assert.deepEqual(pruefeAntwort(fugere, felder, 'fugere, fugio, fugi, fliehen').tippfehler, []);
+  assert.deepEqual(pruefeAntwort(fodere, felder, 'fodere, fodiō, fōdī, graben nach').tippfehler, []);
+  assert.deepEqual(pruefeAntwort(fodere, felder, 'fodere, fodio, fodi, graben').tippfehler, []);
 });
 
 const cremare = {
   wortart: 'verb',
   lemma: 'cremāre',
   formen: { praesens_1sg: 'cremō' },
-  bedeutungen: [{ text: 'verbrennen', typ: 'muss' }, { text: 'schweigen', typ: 'kann' }],
+  bedeutungen: [{ text: 'verbrennen', typ: 'muss' }, { text: 'einäschern', typ: 'kann' }],
 };
-const contemplari = {
+const speculari = {
   wortart: 'verb',
-  lemma: 'contemplārī',
-  formen: { praesens_1sg: 'contemplor', perfekt_1sg: 'contemplātus sum' },
-  bedeutungen: [{ text: 'betrachten', typ: 'muss' }],
-};
-const stare = {
-  wortart: 'verb',
-  lemma: 'stāre',
-  formen: {},
-  bedeutungen: [{ text: '(da)stehen', typ: 'muss' }],
+  lemma: 'speculārī',
+  formen: { praesens_1sg: 'speculor', perfekt_1sg: 'speculātus sum' },
+  bedeutungen: [{ text: 'auskundschaften', typ: 'muss' }],
 };
 const peritus = {
   wortart: 'adjektiv',
@@ -542,20 +537,59 @@ const peritus = {
 test('a doubled or missing double letter is tolerated from 7 letters on', () => {
   assert.equal(pruefeAntwort(cremare, [], 'verbrennnen').richtig, true);
   assert.equal(pruefeAntwort(cremare, [], 'verbrenen').richtig, true);
-  const mitKann = pruefeAntwort(cremare, [], 'verbrennen, schweiggen');
+  const mitKann = pruefeAntwort(cremare, [], 'verbrennen, einäschhern');
   assert.equal(mitKann.richtig, true);
-  assert.deepEqual(mitKann.tippfehler, [{ getippt: 'schweiggen', soll: 'schweigen' }]);
-  assert.equal(pruefeAntwort(contemplari, ['perfekt_1sg'], 'conttemplatus sum, betrachten').richtig, true);
+  assert.deepEqual(mitKann.tippfehler, [{ getippt: 'einäschhern', soll: 'einäschern' }]);
+  assert.equal(pruefeAntwort(speculari, ['perfekt_1sg'], 'specculatus sum, auskundschaften').richtig, true);
 });
 
 test('no other missing or extra letters, none in short words or Latin endings', () => {
   assert.equal(pruefeAntwort(cremare, [], 'vebrennen').richtig, false);
-  assert.equal(pruefeAntwort(contemplari, ['perfekt_1sg'], 'contmplatus sum, betrachten').richtig, false);
-  assert.equal(pruefeAntwort(stare, [], 'sehen').richtig, false);
-  assert.equal(pruefeAntwort(stare, [], 'stehhen').richtig, false);
+  assert.equal(pruefeAntwort(speculari, ['perfekt_1sg'], 'spculatus sum, auskundschaften').richtig, false);
+  assert.equal(pruefeAntwort(fodere, [], 'graen').richtig, false);
+  assert.equal(pruefeAntwort(fodere, [], 'grabben').richtig, false);
   assert.equal(pruefeAntwort(peritus, [], 'erfahrene').richtig, false);
   assert.equal(pruefeAntwort(cremare, [], 'verbrenne').richtig, false);
-  assert.equal(pruefeAntwort(contemplari, ['perfekt_1sg'], 'contemplatu sum, betrachten').richtig, false);
-  assert.equal(pruefeAntwort(contemplari, ['perfekt_1sg'], 'contemplatus suum, betrachten').richtig, false);
-  assert.equal(pruefeAntwort(contemplari, ['praesens_1sg'], 'contemplori, betrachten').richtig, false);
+  assert.equal(pruefeAntwort(speculari, ['perfekt_1sg'], 'speculatu sum, auskundschaften').richtig, false);
+  assert.equal(pruefeAntwort(speculari, ['perfekt_1sg'], 'speculatus suum, auskundschaften').richtig, false);
+  assert.equal(pruefeAntwort(speculari, ['praesens_1sg'], 'speculori, auskundschaften').richtig, false);
+});
+
+const neuter = {
+  wortart: 'sonstiges',
+  lemma: 'neuter, neutra, neutrum',
+  formen: { genitiv: 'neutrīus' },
+  bedeutungen: [{ text: 'keiner (von beiden)', typ: 'muss' }],
+  hinweis: 'Dat. neutrī',
+};
+const ecquis = {
+  wortart: 'sonstiges',
+  lemma: 'ecquis',
+  formen: {},
+  bedeutungen: [{ text: 'ob jemand', typ: 'muss' }],
+  hinweis: 'Fragewort: erwartet die Antwort nein; "etwa jemand?" in direkter Frage',
+};
+
+test('hinweisAngaben: parts, forms without case label, text after a colon', () => {
+  const texte = h => hinweisAngaben(h).map(a => a.text);
+  assert.deepEqual(texte('Dat. neutrī'), ['Dat. neutrī', 'neutrī']);
+  assert.deepEqual(texte('Akk. puppim, Abl. puppī; Pl. puppēs'),
+    ['Akk. puppim, Abl. puppī', 'Akk. puppim', 'puppim', 'Abl. puppī', 'puppī', 'Pl. puppēs', 'puppēs']);
+  assert.deepEqual(texte('Nom./Akk. Pl. n memora'), ['Nom./Akk. Pl. n memora', 'memora']);
+  assert.deepEqual(texte('Gen. Pl. auch nummum'), ['Gen. Pl. auch nummum', 'nummum']);
+  assert.deepEqual(texte(ecquis.hinweis),
+    ['Fragewort: erwartet die Antwort nein', 'erwartet die Antwort nein', 'etwa jemand? in direkter Frage']);
+  assert.deepEqual(texte('Deponens'), ['Deponens']);
+  assert.deepEqual(hinweisAngaben(undefined), []);
+});
+
+test('details from the hint are accepted as extras, but not required', () => {
+  assert.equal(pruefeAntwort(neuter, ['genitiv'], 'neutrius, neutri, keiner von beiden').richtig, true);
+  assert.equal(pruefeAntwort(neuter, ['genitiv'], 'neutrius, Dat. neutri, keiner von beiden').richtig, true);
+  assert.equal(pruefeAntwort(neuter, ['genitiv'], 'neutrius, keiner von beiden').richtig, true);
+  assert.equal(pruefeAntwort(ecquis, [], 'ob jemand, Fragewort: erwartet die Antwort nein').richtig, true);
+  assert.equal(pruefeAntwort(ecquis, [], 'ob jemand, erwartet die Antwort nein').richtig, true);
+  // Still graded: the hint does not replace a meaning, and Latin endings stay strict.
+  assert.equal(pruefeAntwort(ecquis, [], 'erwartet die Antwort nein').richtig, false);
+  assert.equal(pruefeAntwort(neuter, ['genitiv'], 'neutrius, neutre, keiner von beiden').richtig, false);
 });
