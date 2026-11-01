@@ -2,9 +2,12 @@
 // voneinander (siehe store.js), aber über dieselbe Dateimechanik.
 //
 // Im Browser (Entwicklung): Download über Blob + <a download>.
-// Auf dem Handy: Datei über @capacitor/filesystem in den Cache-Ordner
-// schreiben und über @capacitor/share direkt teilen (E-Mail/Messenger/
-// Google Drive) - kein Kabel nötig. Wie schon bei der Spracheingabe (Schritt
+// Auf dem Handy: Datei über @capacitor/filesystem im Ordner
+// Documents/VeniVidiDidici speichern (dort findet sie der Import über die
+// Dateiauswahl wieder) und danach auf Wunsch zusätzlich über
+// @capacitor/share teilen (E-Mail/Messenger/Google Drive) - kein Kabel
+// nötig. Nur Teilen reichte nicht: Der Teilen-Dialog bietet nicht auf jedem
+// Handy "Als Datei speichern" an. Wie schon bei der Spracheingabe (Schritt
 // 10/11): Plugins über die von Capacitor injizierte globale Registry
 // (window.Capacitor.Plugins) ansprechen, NICHT per import - ohne Bundler
 // ließe sich ein npm-Paket im Browser gar nicht auflösen.
@@ -25,22 +28,44 @@ function ladeAlsBrowserDownload(dateiname, inhalt) {
   URL.revokeObjectURL(url);
 }
 
-async function schreibeUndTeileDatei(dateiname, inhalt) {
+const EXPORT_ORDNER = 'VeniVidiDidici';
+
+async function speichereUndTeileDatei(dateiname, inhalt) {
   const { Filesystem, Share } = window.Capacitor.Plugins;
-  const geschrieben = await Filesystem.writeFile({
-    path: dateiname,
-    data: inhalt,
-    directory: 'CACHE',
-    encoding: 'utf8',
-  });
-  await Share.share({ title: dateiname, url: geschrieben.uri });
+  // Ab Android 11 ohne Berechtigung (eigene Dateien in Documents); bis
+  // Android 10 fragt das Plugin hier nach der Speicher-Berechtigung.
+  await Filesystem.requestPermissions();
+  let geschrieben;
+  try {
+    geschrieben = await Filesystem.writeFile({
+      path: `${EXPORT_ORDNER}/${dateiname}`,
+      data: inhalt,
+      directory: 'DOCUMENTS',
+      encoding: 'utf8',
+      recursive: true,
+    });
+  } catch (fehler) {
+    // Typischer Fall: Die Datei stammt noch von einer früheren Installation
+    // der App - die darf Android die neue Installation nicht überschreiben.
+    throw new Error(
+      `${fehler?.message || fehler}\n\nFalls es „Documents/${EXPORT_ORDNER}/${dateiname}“ schon gibt `
+      + '(z.B. von vor einer Neuinstallation der App): die alte Datei löschen oder umbenennen und '
+      + 'nochmal exportieren.'
+    );
+  }
+  const teilen = confirm(
+    `Gespeichert im Ordner „Documents/${EXPORT_ORDNER}“ als „${dateiname}“. `
+    + 'Ein weiterer Export am selben Tag überschreibt diese Datei.\n\n'
+    + 'Zusätzlich teilen (z.B. per E-Mail oder in Google Drive)?'
+  );
+  if (teilen) await Share.share({ title: dateiname, url: geschrieben.uri });
 }
 
 // datenObjekt wird als hübsch formatiertes JSON exportiert.
 export async function exportiereDatei(dateiname, datenObjekt) {
   const inhalt = JSON.stringify(datenObjekt, null, 2);
   if (istCapacitor()) {
-    await schreibeUndTeileDatei(dateiname, inhalt);
+    await speichereUndTeileDatei(dateiname, inhalt);
   } else {
     ladeAlsBrowserDownload(dateiname, inhalt);
   }
