@@ -149,7 +149,7 @@ function loesungsElement(vokabel, abfrageFelder, ergebnis) {
     container.appendChild(tippfehler);
   }
 
-  // Lern-Hinweis zur Vokabel (z.B. "Deponens", "Dat. nēminī") erst mit der
+  // Lern-Hinweis zur Vokabel (z.B. "Deponens", "Dat. neutrī") erst mit der
   // Lösung zeigen - vorher würde er womöglich etwas verraten.
   if (vokabel.hinweis) {
     const hinweis = document.createElement('p');
@@ -233,11 +233,11 @@ function ergebnisAnzeigen(container, vokabel, abfrageFelder, ergebnis, falschWer
 let rueckfrageZaehler = 0;
 
 // Rückfrage nach dem deutschen Artikel, wenn einer (MUSS- oder KANN-)
-// Bedeutung nur der fehlt (z.B. "Sonne" statt "die Sonne").
+// Bedeutung nur der fehlt (z.B. "Wolke" statt "die Wolke").
 function artikelEintrag(e) {
   // Für die Anzeige die korrekt geschriebene Nomen-Form aus der erwarteten
   // Bedeutung nehmen (e.soll ohne den führenden Artikel), nicht das getippte
-  // Segment - sonst würde ein Tippfehler wie "Sonde" statt "Sonne" in der
+  // Segment - sonst würde ein Tippfehler wie "Wolle" statt "Wolke" in der
   // Frage wiederholt statt korrigiert.
   const korrektesWort = e.soll.replace(/^(der|die|das)\s+/i, '');
   return {
@@ -252,8 +252,8 @@ function artikelEintrag(e) {
     // Für die "hat der Nutzer das Wort schon mitgeliefert?"-Prüfung in
     // kombiniereRohtext() - dort muss gegen die KORREKTE Schreibweise
     // verglichen werden, nicht gegen den Tippfehler, sonst würde z.B. die
-    // Antwort "die Sonne" (korrekt) nicht als "enthält Sonne" erkannt, weil
-    // sie den Tippfehler "Sonde" nicht enthält.
+    // Antwort "die Wolke" (korrekt) nicht als "enthält Wolke" erkannt, weil
+    // sie den Tippfehler "Wolle" nicht enthält.
     korrektesWort,
   };
 }
@@ -283,8 +283,8 @@ function ermittleFehlendeEintraege(vokabel, abfrageFelder, ergebnis) {
   let bedeutungGenannt = [...ergebnis.bedeutungErgebnisse, ...ergebnis.kannBedeutungErgebnisse]
     .some(e => e.ok || e.fehltNurArtikel);
 
-  // Artikel einer genannten KANN-Bedeutung zuerst (z.B. "Stille" bei
-  // silentium) - danach ist sie vollständig, und eine fehlende MUSS-Bedeutung
+  // Artikel einer genannten KANN-Bedeutung zuerst (z.B. "Windstille" bei
+  // tranquillitās) - danach ist sie vollständig, und eine fehlende MUSS-Bedeutung
   // wird mit "noch" erfragt.
   for (const e of ergebnis.kannBedeutungErgebnisse) {
     if (e.fehltNurArtikel) eintraege.push(artikelEintrag(e));
@@ -295,7 +295,7 @@ function ermittleFehlendeEintraege(vokabel, abfrageFelder, ergebnis) {
     if (!e.ok) {
       // Zwei unterschiedliche Lücken, zwei unterschiedliche Fragen: Fehlt
       // die Bedeutung komplett, oder steckt nur der deutsche Artikel im Weg
-      // (z.B. "Sonne" statt "die Sonne")? Wichtig, das nicht mit dem
+      // (z.B. "Wolke" statt "die Wolke")? Wichtig, das nicht mit dem
       // lateinischen Genus zu vermischen (siehe unten).
       if (e.fehltNurArtikel) {
         eintraege.push(artikelEintrag(e));
@@ -309,7 +309,7 @@ function ermittleFehlendeEintraege(vokabel, abfrageFelder, ergebnis) {
   }
 
   // Genus erst NACH den Bedeutungen abfragen: eine unvollständige Bedeutung
-  // wie "Sonne" (Artikel vergessen) soll über die Artikel-Rückfrage oben
+  // wie "Wolke" (Artikel vergessen) soll über die Artikel-Rückfrage oben
   // vervollständigt werden, nicht über die Genus-Rückfrage - sonst würde
   // eine Antwort wie "die" fälschlich als (falsches) Genus statt als
   // fehlender Artikel interpretiert. Deutscher Artikel und lateinisches

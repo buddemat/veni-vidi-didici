@@ -22,9 +22,9 @@ export function normalisiere(text) {
     .replace(/j/g, 'i')
     .replace(/v/g, 'u')
     .replace(/[?!]/g, '')
-    // Auslassungspunkte ("sowohl ... als auch") und Kommas nur als
-    // Worttrenner werten - "sowohl...als auch", "sowohl als auch" und
-    // (zusammengefasst, siehe fasseKommaWerteZusammen) "sowohl, als auch"
+    // Auslassungspunkte ("sei es ... sei es") und Kommas nur als
+    // Worttrenner werten - "sei es...sei es", "sei es sei es" und
+    // (zusammengefasst, siehe fasseKommaWerteZusammen) "sei es, sei es"
     // gelten damit alle gleich.
     .replace(/\.{2,}|…|,/g, ' ')
     .replace(/[-/]/g, ' ')
@@ -115,13 +115,13 @@ const GENUS_SYNONYME = {
 };
 
 // "der"/"die"/"das" kollidieren mit deutschen Artikeln in Bedeutungen (z.B.
-// "die Insel") und dürfen deshalb nur erkannt werden, wenn sie ein ganzes
+// "die Wolke") und dürfen deshalb nur erkannt werden, wenn sie ein ganzes
 // Komma-Segment für sich sind (siehe erkenneGenusSegment). Die übrigen,
 // eindeutigen Fachbegriffe/Kürzel sind dafür zu selten Teil einer echten
 // Bedeutung, um dasselbe Risiko zu haben - die dürfen deshalb auch als
 // erstes oder letztes Wort eines längeren Segments ohne eigenes Komma
 // stehen (siehe erkenneGenusPraefixOderSuffix), z.B. "maskulinum der Esel"
-// oder "die Stille neutrum".
+// oder "das Schaf neutrum".
 const GENUS_ARTIKEL = ['der', 'die', 'das'];
 
 function genusAusWort(wort) {
@@ -153,7 +153,7 @@ function eindeutigesGenusWort(wort) {
 
 // Erkennt Genus als erstes ODER letztes Wort eines längeren, sonst
 // unveränderten Segments - z.B. "maskulinum der Esel" (Genus vorne) oder
-// "die Stille neutrum" (Genus hinten, wenn es als letzte Angabe einfach
+// "das Schaf neutrum" (Genus hinten, wenn es als letzte Angabe einfach
 // dazugesagt wird). Nur für die eindeutigen Synonyme, nicht für der/die/das
 // (siehe GENUS_ARTIKEL).
 function erkenneGenusPraefixOderSuffix(segment) {
@@ -190,11 +190,11 @@ export function zerlegeAntwort(rohtext) {
 // Genus muss - anders als Formen/Bedeutungen - kein eigenes Komma-Segment an
 // fester Position sein, aber "der"/"die"/"das" müssen weiterhin ein ganzes
 // Segment für sich sein (nicht Teil eines längeren): Sonst ließe sich z.B.
-// bei einer femininen Vokabel das "die" aus der Bedeutung "die Insel" nicht
+// bei einer femininen Vokabel das "die" aus der Bedeutung "die Wolke" nicht
 // mehr von einer eigenständigen Genus-Angabe "die" unterscheiden.
 // Bei Wörtern mit zwei Genera dürfen auch beide als eigene Segmente kommen
-// ("m, f") oder jeweils an eine Bedeutung angehängt ("der Sklave maskulinum,
-// die Sklavin femininum") - alle Genus-Angaben werden gesammelt, Ergebnis
+// ("m, f") oder jeweils an eine Bedeutung angehängt ("der Schüler maskulinum,
+// die Schülerin femininum") - alle Genus-Angaben werden gesammelt, Ergebnis
 // dann z.B. "m/f".
 export function trenneGenusAus(segmente) {
   const genera = [];
@@ -228,17 +228,17 @@ export function kombiniereRohtext(eintrag, bisherigerRohtext, eigeneEingabe) {
   if (eintrag?.segment) {
     const teile = bisherigerRohtext.split(',').map(t => t.trim());
     // Das Segment kann im Rohtext noch ein angehängtes Genus tragen
-    // ("Sonne m"; trenneGenusAus() hat es für die Prüfung abgetrennt) - dann
+    // ("Wolke f"; trenneGenusAus() hat es für die Prüfung abgetrennt) - dann
     // den Artikel vor das Wort innerhalb des Rohsegments setzen
-    // ("die Sonne m"), sonst würde "die" als eigenes Genus gewertet.
+    // ("die Wolke f"), sonst würde "die" als eigenes Genus gewertet.
     const index = teile.findIndex(t => t === eintrag.segment || erkenneGenusPraefixOderSuffix(t)?.rest === eintrag.segment);
     if (index !== -1) {
       // Manche Kinder wiederholen beim Artikel gleich das ganze (korrekt
-      // geschriebene) Wort ("die Sonne" statt nur "die") - dann nicht
+      // geschriebene) Wort ("die Wolke" statt nur "die") - dann nicht
       // nochmal anhängen. Wichtig: gegen die KORREKTE Schreibweise prüfen
       // (eintrag.korrektesWort), nicht gegen das ggf. falsch getippte
-      // Segment - sonst würde "die Sonne" nicht als "enthält das Wort schon"
-      // erkannt, wenn ursprünglich "Sonde" (Tippfehler) getippt wurde.
+      // Segment - sonst würde "die Wolke" nicht als "enthält das Wort schon"
+      // erkannt, wenn ursprünglich "Wolle" (Tippfehler) getippt wurde.
       const zuPruefendesWort = eintrag.korrektesWort || eintrag.segment;
       const enthaeltSchonDasWort = normalisiere(eigeneEingabe).includes(normalisiere(zuPruefendesWort));
       const ersatz = enthaeltSchonDasWort ? eigeneEingabe : `${eigeneEingabe} ${eintrag.segment}`;
@@ -250,17 +250,17 @@ export function kombiniereRohtext(eintrag, bisherigerRohtext, eigeneEingabe) {
 }
 
 // Manche Lemmata/Formen/Bedeutungen enthalten Klammer-Zusätze - mal reine
-// Grammatik-Hinweise ("vacō (m. Abl.)" = regiert Ablativ), mal optionale
-// Wortbestandteile ("(ver)brennen", "dext(e)ra").
+// Grammatik-Hinweise ("egeō (m. Abl.)" = regiert Ablativ), mal optionale
+// Wortbestandteile ("(ver)kaufen", "ap(i)um").
 // Beides wird durch zwei akzeptierte Varianten abgedeckt: einmal ganz ohne
-// Klammerinhalt ("vacō", "brennen", "dextra") und einmal mit Inhalt, aber
-// ohne die Klammern selbst ("verbrennen", "dextera") - Tippfehlertoleranz
+// Klammerinhalt ("egeō", "kaufen", "apum") und einmal mit Inhalt, aber
+// ohne die Klammern selbst ("verkaufen", "apium") - Tippfehlertoleranz
 // deckt kleine Differenzen zwischen den Varianten zusätzlich ab.
 // Deutsche Verb-Präfixe, die im Satz tatsächlich als eigenes Wort abgetrennt
-// werden ("es liegt da" zu "daliegen") - dafür ist "da liegen" echtes
+// werden ("er legt es hin" zu "hinlegen") - dafür ist "hin legen" echtes
 // Deutsch. Bewusst NICHT alle Präfixe: untrennbare Präfixe wie "ver-"/"be-"/
 // "er-"/"ent-"/"ge-"/"zer-"/"emp-" stehen NIE als eigenes Wort ("ver
-// brennen" ist kein korrektes Deutsch, "verbrennen" ist immer ein Wort).
+// kaufen" ist kein korrektes Deutsch, "verkaufen" ist immer ein Wort).
 // "sich"/"sē" sind kein Präfix, aber genauso ein eigenständiges, sicher
 // abtrennbares Wort (Reflexivpronomen). Nur für Verb-Bedeutungen relevant -
 // Latein (Lemma/Formen) kennt kein trennbares Präfix, und bei anderen
@@ -291,12 +291,12 @@ function klammerVarianten(text, praefixPruefungAktiv) {
   const bereinigen = s => s.replace(/\s+/g, ' ').trim();
 
   // Markiert die Klammer einen eigenen Wortanfang (am Textanfang oder nach
-  // einem Leerzeichen, z.B. "(da)liegen", "das (Land-)Haus")? Oder steht sie
-  // MITTEN in einem Wort (z.B. "dext(e)ra", "Tausend(e)", "der/die
-  // Bürger(in)")? Im zweiten Fall ist der Klammerinhalt nur eine Buchstaben-/
+  // einem Leerzeichen, z.B. "(hin)legen", "das (Bauern-)Haus")? Oder steht sie
+  // MITTEN in einem Wort (z.B. "ap(i)um", "Jahr(e)", "der/die
+  // Künstler(in)")? Im zweiten Fall ist der Klammerinhalt nur eine Buchstaben-/
   // Endungsvariante, kein eigenes Wort - beim Entfernen darf dort KEIN
-  // Leerzeichen entstehen ("dextra", nicht "dext ra"), und eine Leerzeichen-
-  // Variante ergäbe nur Kauderwelsch ("dext ra", "Tausend e", "Bürger in").
+  // Leerzeichen entstehen ("apum", nicht "ap um"), und eine Leerzeichen-
+  // Variante ergäbe nur Kauderwelsch ("ap um", "Jahr e", "Künstler in").
   const istWortanfang = /(^|\s)\(/.test(text);
 
   const ohneKlammerinhalt = bereinigen(
@@ -305,8 +305,8 @@ function klammerVarianten(text, praefixPruefungAktiv) {
       : text.replace(/\([^)]*\)/g, '')
   );
 
-  // Ein Bindestrich direkt vor der schließenden Klammer (z.B. "(Land-)Haus")
-  // zeigt an, dass das Wort ohne Trennzeichen direkt weitergeht ("Landhaus")
+  // Ein Bindestrich direkt vor der schließenden Klammer (z.B. "(Bauern-)Haus")
+  // zeigt an, dass das Wort ohne Trennzeichen direkt weitergeht ("Bauernhaus")
   // - der bleibt sonst als echter Bindestrich stehen und würde nach der
   // strengen Längenprüfung bei unterschiedlicher Länge (siehe
   // toleranzSchwelle) nicht mehr zur getippten Antwort passen.
@@ -314,8 +314,8 @@ function klammerVarianten(text, praefixPruefungAktiv) {
 
   const varianten = new Set([ohneKlammerinhalt, mitKlammerinhaltZusammen]);
 
-  // Zusätzlich mit Leerzeichen statt Zusammenschreibung ("da liegen" statt
-  // "daliegen") - Kinder oder die Spracherkennung sprechen/erkennen einen
+  // Zusätzlich mit Leerzeichen statt Zusammenschreibung ("hin legen" statt
+  // "hinlegen") - Kinder oder die Spracherkennung sprechen/erkennen einen
   // Klammer-Wortteil oft als eigenes Wort statt zusammengeschrieben. Nur bei
   // echtem Wortanfang, und bei aktiver Präfix-Prüfung (Verb-Bedeutungen) nur
   // bei einem bekannten TRENNBAREN Präfix (siehe TRENNBARE_PRAEFIXE oben).
@@ -327,7 +327,7 @@ function klammerVarianten(text, praefixPruefungAktiv) {
     }
   }
 
-  // Und wörtlich mit Klammern ("(be)grüßen", "der (Haus-)Herr") -
+  // Und wörtlich mit Klammern ("(be)glückwünschen", "das (Bauern-)Haus") -
   // normalisiere() lässt Klammern stehen, die so getippte Angabe passt also
   // genau auf diese Variante.
   varianten.add(bereinigen(text));
@@ -336,17 +336,18 @@ function klammerVarianten(text, praefixPruefungAktiv) {
 }
 
 // Manche Werte sind über "/" vollständige Alternativen (nicht optionale
-// Zusätze wie oben) - z.B. Form "servī/servae" (Genitiv je nach Geschlecht)
-// oder Bedeutung "wer?/was?". Jede Seite ist für sich genommen richtig
-// (z.B. nur "wer"), aber auch die volle, kombinierte Angabe zählt - "/" wird
-// von normalisiere() wie ein Leerzeichen behandelt, daher gelten dafür
-// gleichermaßen "wer/was", "wer was" und "wer? was?".
+// Zusätze wie oben) - z.B. Form "discipulī/discipulae" (Genitiv je nach
+// Geschlecht) oder Bedeutung "wie oft?/wie lange?". Jede Seite ist für sich
+// genommen richtig (z.B. nur "wie oft"), aber auch die volle, kombinierte
+// Angabe zählt - "/" wird von normalisiere() wie ein Leerzeichen behandelt,
+// daher gelten dafür gleichermaßen "wie oft/wie lange", "wie oft wie lange"
+// und "wie oft? wie lange?".
 // praefixPruefungAktiv: bei Verb-Bedeutungen true (siehe TRENNBARE_PRAEFIXE
 // oben), sonst false/weggelassen - Latein (Lemma/Formen) und andere
 // Wortarten brauchen die Prüfung nicht.
-// "der/die Führer(in)": der Artikel gehört jeweils zu einer Form - "der
-// Führer" bzw. "die Führerin" (oder beide, "der Führer/die Führerin"). Ein
-// einfaches Aufteilen am "/" ergäbe sonst nur "der" und "die Führer(in)".
+// "der/die Künstler(in)": der Artikel gehört jeweils zu einer Form - "der
+// Künstler" bzw. "die Künstlerin" (oder beide, "der Künstler/die Künstlerin").
+// Ein einfaches Aufteilen am "/" ergäbe sonst nur "der" und "die Künstler(in)".
 const ARTIKEL_PAAR = /^der\/die (.+)$/;
 
 export function sollVarianten(text, praefixPruefungAktiv = false) {
@@ -364,7 +365,7 @@ export function sollVarianten(text, praefixPruefungAktiv = false) {
   if (text.includes('/')) {
     const seiten = text.split('/').map(s => s.trim()).filter(Boolean);
     // Bei "/" zwischen einzelnen Wörtern zählen nur die ganzen Ausdrücke,
-    // nicht eine Seite allein ("sei" bei "sei/seid gegrüßt!").
+    // nicht eine Seite allein ("sei" bei "sei/seid still!").
     const ausdruecke = wortAlternativen(seiten);
     for (const seite of ausdruecke.length > 0 ? ausdruecke : seiten) {
       for (const variante of klammerVarianten(seite, praefixPruefungAktiv)) varianten.add(variante);
@@ -374,12 +375,12 @@ export function sollVarianten(text, praefixPruefungAktiv = false) {
 }
 
 // Steht der "/" nur zwischen zwei einzelnen Wörtern eines längeren Ausdrucks
-// ("Sei/seid gegrüßt!", "die linke Hand/Seite"), ist jede Seite für sich
+// ("Sei/seid still!", "die vordere Tür/Seite"), ist jede Seite für sich
 // unvollständig (und zählt allein nicht) - gemeint ist der ganze Ausdruck
-// mit dem einen oder dem anderen Wort: "Sei gegrüßt!" und "seid gegrüßt!". Erkennbar daran, dass
+// mit dem einen oder dem anderen Wort: "Sei still!" und "seid still!". Erkennbar daran, dass
 // genau eine Seite ein einzelnes Wort ist; sind beide Seiten mehrere Wörter
-// ("der Diener/die Dienerin"), sind es schon vollständige Alternativen -
-// genauso, wenn die linke Seite mit "!"/"?" endet ("sieh da!/seht!").
+// ("der Lehrer/die Lehrerin"), sind es schon vollständige Alternativen -
+// genauso, wenn die linke Seite mit "!"/"?" endet ("hör zu!/hört!").
 // Nur bei genau einem "/".
 function wortAlternativen(seiten) {
   if (seiten.length !== 2 || /[!?]$/.test(seiten[0])) return [];
@@ -432,11 +433,11 @@ function besteVariante(sollVarianten, segment, latein = false) {
   for (const soll of sollVarianten) {
     const na = normalisiere(soll);
 
-    // Bei "Artikel Nomen"-Bedeutungen (z.B. "die Sonne") muss der Artikel
+    // Bei "Artikel Nomen"-Bedeutungen (z.B. "die Wolke") muss der Artikel
     // EXAKT stimmen - "der" statt "die" ist ein klarer inhaltlicher Fehler,
     // keine Tippfehler-Toleranz wert, auch wenn die Gesamtlänge nach der
-    // sonst üblichen Formel noch tolerant wäre (z.B. "der Sonne" vs.
-    // "die Sonne" unterscheidet sich nur um 2 Buchstaben bei 9 Zeichen
+    // sonst üblichen Formel noch tolerant wäre (z.B. "der Wolke" vs.
+    // "die Wolke" unterscheidet sich nur um 2 Buchstaben bei 9 Zeichen
     // Gesamtlänge - würde sonst fälschlich als Tippfehler durchgehen).
     const sollArtikel = artikelUndRest(na);
     if (sollArtikel) {
@@ -469,8 +470,8 @@ function ordneZu(erwarteteWerte, segmente) {
     });
   });
   // Bei gleicher Distanz zuerst die bewerteten Angaben (Formen, MUSS-
-  // Bedeutungen) bedienen: Ist z.B. der Genitiv gleich dem Lemma ("orbis,
-  // orbis") und wird nur einmal genannt, gehört das Segment dem Genitiv -
+  // Bedeutungen) bedienen: Ist z.B. der Genitiv gleich dem Lemma ("ovis,
+  // ovis") und wird nur einmal genannt, gehört das Segment dem Genitiv -
   // die (ungewertete) Lemma-Wiederholung geht dann eben leer aus.
   const BEWERTET = new Set(['form', 'bedeutung']);
   const rang = k => (BEWERTET.has(erwarteteWerte[k.ei].typ) ? 0 : 1);
@@ -488,27 +489,28 @@ function ordneZu(erwarteteWerte, segmente) {
 
 // Ob ein Segment zu IRGENDEINEM erwarteten Wert passt - unabhängig davon, ob
 // dessen Platz schon durch ein anderes Segment belegt ist. Damit lässt sich
-// unterscheiden zwischen einer harmlosen Doppelnennung (z.B. bei "villa"
-// sowohl "das Haus" als auch die Langform "das Landhaus" - beides sind
-// Varianten derselben erwarteten Bedeutung) und einer echten Falschangabe
-// (z.B. bei "sōl" zusätzlich "der Mond" - passt zu gar nichts Erwartetem).
+// unterscheiden zwischen einer harmlosen Doppelnennung (z.B. bei "das
+// (Bauern-)Haus" sowohl "das Haus" als auch die Langform "das Bauernhaus" -
+// beides sind Varianten derselben erwarteten Bedeutung) und einer echten
+// Falschangabe (z.B. bei "lupus" zusätzlich "der Fuchs" - passt zu gar nichts
+// Erwartetem).
 function segmentPasstIrgendwo(segment, erwarteteWerte) {
   return erwarteteWerte.some(e => besteVarianzDistanz(e.sollVarianten, segment, e.latein) !== null);
 }
 
 // Ob ein Segment zu einer erwarteten Bedeutung passen WÜRDE, wenn ein
-// deutscher Artikel davor stünde (z.B. "Sonne" -> "die Sonne"). Damit lässt
+// deutscher Artikel davor stünde (z.B. "Wolke" -> "die Wolke"). Damit lässt
 // sich der Fall "Artikel vergessen" (die Bedeutung bleibt dann korrekt als
 // fehlend erkannt, siehe bedeutungErgebnisse) von einer echten Falschangabe
-// unterscheiden - "Sonne" soll nicht als "passt nicht dazu" gemeldet werden.
+// unterscheiden - "Wolke" soll nicht als "passt nicht dazu" gemeldet werden.
 function segmentKoennteFehlenderArtikelSein(segment, erwarteteWerte) {
   return erwarteteWerte.some(e => findeArtikelKandidatSegment(e.sollVarianten, [segment], new Set()) !== null);
 }
 
-// Nur Soll-Varianten, die selbst mit der/die/das beginnen ("die Sonne"):
-// Nur dort kann ein Artikel fehlen. Sonst würde z.B. "sehen" mit
-// vorangestelltem "das" per Tippfehlertoleranz zu "da stehen" passen und
-// eine Artikel-Rückfrage zum Verb "(da)stehen" auslösen.
+// Nur Soll-Varianten, die selbst mit der/die/das beginnen ("die Wolke"):
+// Nur dort kann ein Artikel fehlen. Sonst würde z.B. "leiben" mit
+// vorangestelltem "das" per Tippfehlertoleranz zu "da bleiben" passen und
+// eine Artikel-Rückfrage zum Verb "(da)bleiben" auslösen.
 function variantenMitArtikel(sollVarianten) {
   return sollVarianten.filter(v => artikelUndRest(normalisiere(v)) !== null);
 }
@@ -545,9 +547,9 @@ function segmentPasstBereits(segment, erwarteteWerte, genusAktiv) {
 // Fallback für Segmente, die als Ganzes zu nichts Erwartetem passen: Versuch,
 // sie an "der"/"die"/"das" aufzuteilen (jedes Vorkommen als möglicher Beginn
 // einer neuen Bedeutung oder - bei aktivem Genus - einer Genus-Angabe), damit
-// z.B. "silentium neutrum die Ruhe die Stille" auch ganz ohne Kommas
+// z.B. "tranquillitas femininum die Gelassenheit die Windstille" auch ohne Kommas
 // funktioniert. Nur übernommen, wenn WIRKLICH JEDES entstehende Teilstück zu
-// etwas passt - schützt Redewendungen wie "in der Ferne", bei denen der
+// etwas passt - schützt Redewendungen wie "auf der Stelle", bei denen der
 // Artikel mitten im Text steht und keine Trennstelle ist (die passen als
 // Ganzes bereits über segmentPasstBereits, landen also gar nicht erst hier).
 function versucheArtikelAufteilung(segment, erwarteteWerte, genusAktiv) {
@@ -570,12 +572,12 @@ function versucheArtikelAufteilung(segment, erwarteteWerte, genusAktiv) {
   return alleStueckePassen ? stuecke : null;
 }
 
-// Manche Werte enthalten selbst ein Komma (z.B. Lemma "hic, haec, hoc",
-// Bedeutung "so tun, als ob") - zerlegeAntwort hat sie dann in mehrere
+// Manche Werte enthalten selbst ein Komma (z.B. Lemma "quotus, quota,
+// quotum", Bedeutung "ja, sogar") - zerlegeAntwort hat sie dann in mehrere
 // Segmente zerschnitten. Aufeinanderfolgende Segmente wieder zu einem
 // zusammenfassen, wenn sie gemeinsam zu einem solchen Komma-Wert passen;
 // genauso bei Auslassungspunkten, die gern als Komma getippt werden
-// ("sowohl, als auch" für "sowohl ... als auch");
+// ("sei es, sei es" für "sei es ... sei es");
 // pro Startposition gewinnt das längste passende Stück.
 function fasseKommaWerteZusammen(segmente, erwarteteWerte) {
   const kommaVarianten = erwarteteWerte
@@ -638,7 +640,7 @@ export function hinweisAngaben(hinweis) {
 
 // Welche der in den Einstellungen aktivierten Felder bei dieser Vokabel
 // tatsächlich abgefragt werden: nur die, die sie auch hat - z.B. hat das
-// indeklinable "nefās" keinen Genitiv.
+// indeklinable "pondō" keinen Genitiv.
 export function aktiveAbfrageFelder(vokabel, felderAusEinstellungen) {
   return (felderAusEinstellungen || []).filter(feldKey => vokabel.formen[feldKey] !== undefined);
 }
@@ -757,7 +759,7 @@ export function pruefeAntwort(vokabel, abfrageFelder, rohtext, tippfehlerErlaubt
   // Nicht Pflicht für "richtig", aber nützlich für die Anzeige (z.B. grün
   // markieren, wenn eine KANN-Bedeutung korrekt mit genannt wurde) - und für
   // die Rückfragen: Auch einer KANN-Bedeutung kann nur der Artikel fehlen
-  // (z.B. "Stille" bei silentium), dann wird danach gefragt. Segmente, die
+  // (z.B. "Windstille" bei tranquillitās), dann wird danach gefragt. Segmente, die
   // schon Artikel-Kandidat einer MUSS-Bedeutung sind, bleiben dieser.
   const artikelSegmente = new Set(belegteSegmente);
   bedeutungErgebnisse.forEach(e => {
@@ -780,7 +782,7 @@ export function pruefeAntwort(vokabel, abfrageFelder, rohtext, tippfehlerErlaubt
     };
   });
 
-  // Manche Wörter haben zwei zulässige Genera (z.B. "servus/serva" -> "m/f") -
+  // Manche Wörter haben zwei zulässige Genera (z.B. "discipulus/discipula" -> "m/f") -
   // jedes einzeln gilt als richtig, beide zusammen ("m, f", "m/f") auch;
   // ein nicht zulässiges Genus dabei macht die Angabe falsch.
   const genusErgebnis = genusAktiv

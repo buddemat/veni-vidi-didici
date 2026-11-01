@@ -16,8 +16,8 @@ function alleFelderDerWortart(wortart) {
 }
 
 // Complete, correct answer as a student would type it: for each item the
-// first accepted spelling, i.e. without parentheses - e.g. "der Herr"
-// instead of "der (Haus-)Herr".
+// first accepted spelling, i.e. without parentheses - e.g. "das Haus"
+// instead of "das (Bauern-)Haus".
 function korrekteAntwort(vokabel, abfrageFelder) {
   const istVerb = vokabel.wortart === 'verb';
   const teile = [sollVarianten(vokabel.lemma)[0]];
@@ -33,26 +33,26 @@ function korrekteAntwort(vokabel, abfrageFelder) {
   return teile.join(', ');
 }
 
-const nefas = {
+const pondo = {
   wortart: 'substantiv',
-  lemma: 'nefās',
+  lemma: 'pondō',
   formen: {},
-  bedeutungen: [{ text: 'der Frevel', typ: 'muss' }, { text: 'das Verbrechen', typ: 'muss' }],
+  bedeutungen: [{ text: 'das Pfund', typ: 'muss' }, { text: 'das Gewicht', typ: 'muss' }],
 };
 
 test('aktiveAbfrageFelder skips fields the word does not have', () => {
-  assert.deepEqual(aktiveAbfrageFelder(nefas, ['genitiv_sg', 'genus']), []);
+  assert.deepEqual(aktiveAbfrageFelder(pondo, ['genitiv_sg', 'genus']), []);
   assert.deepEqual(
-    aktiveAbfrageFelder({ formen: { genitiv_sg: 'sōlis', genus: 'm' } }, ['genitiv_sg', 'genus']),
+    aktiveAbfrageFelder({ formen: { genitiv_sg: 'lupī', genus: 'm' } }, ['genitiv_sg', 'genus']),
     ['genitiv_sg', 'genus'],
   );
-  assert.deepEqual(aktiveAbfrageFelder(nefas, undefined), []);
+  assert.deepEqual(aktiveAbfrageFelder(pondo, undefined), []);
 });
 
-test('indeclinable noun without forms (nefās) is checked instead of crashing', () => {
-  const felder = aktiveAbfrageFelder(nefas, ['genitiv_sg', 'genus']);
-  assert.equal(pruefeAntwort(nefas, felder, 'nefas, der Frevel, das Verbrechen').richtig, true);
-  assert.equal(pruefeAntwort(nefas, felder, 'nefas, der Frevel').richtig, false);
+test('indeclinable noun without forms (pondō) is checked instead of crashing', () => {
+  const felder = aktiveAbfrageFelder(pondo, ['genitiv_sg', 'genus']);
+  assert.equal(pruefeAntwort(pondo, felder, 'pondo, das Pfund, das Gewicht').richtig, true);
+  assert.equal(pruefeAntwort(pondo, felder, 'pondo, das Pfund').richtig, false);
 });
 
 function fehlerBeiKorrekterAntwort(vokabeln) {
@@ -71,8 +71,8 @@ function fehlerBeiKorrekterAntwort(vokabeln) {
   return fehler;
 }
 
-// Catches e.g. words with incomplete forms (nefās) and values containing
-// commas (hic, haec, hoc) - every correct answer must be rated correct.
+// Catches e.g. words with incomplete forms (pondō) and values containing
+// commas (quotus, quota, quotum) - every correct answer must be rated correct.
 test('every word in the vocabulary can be quizzed with all fields active', () => {
   assert.deepEqual(fehlerBeiKorrekterAntwort(alleVokabeln), []);
 });
@@ -81,57 +81,57 @@ test('every word in the example vocabulary can be quizzed with all fields active
   assert.deepEqual(fehlerBeiKorrekterAntwort(alleVokabelnAus(beispielSeed)), []);
 });
 
-const hic = {
+const quotus = {
   wortart: 'sonstiges',
-  lemma: 'hic, haec, hoc',
+  lemma: 'quotus, quota, quotum',
   formen: {},
-  bedeutungen: [{ text: 'dieser, diese, dieses', typ: 'muss' }],
+  bedeutungen: [{ text: 'der wievielte, die wievielte, das wievielte', typ: 'muss' }],
 };
-const simulare = {
-  wortart: 'verb',
-  lemma: 'simulāre',
-  formen: { praesens_1sg: 'simulō' },
-  bedeutungen: [{ text: 'vortäuschen', typ: 'muss' }, { text: 'so tun, als ob', typ: 'muss' }],
+const quinEtiam = {
+  wortart: 'sonstiges',
+  lemma: 'quīn etiam',
+  formen: {},
+  bedeutungen: [{ text: 'vielmehr', typ: 'muss' }, { text: 'ja, sogar', typ: 'muss' }],
 };
 
 test('values containing commas are assembled from several segments', () => {
-  assert.equal(pruefeAntwort(hic, [], 'hic, haec, hoc, dieser, diese, dieses').richtig, true);
-  assert.equal(pruefeAntwort(hic, [], 'hic,haec,hoc,dieser,diese,dieses').richtig, true);
-  assert.equal(pruefeAntwort(simulare, ['praesens_1sg'], 'simulare, simulo, so tun, als ob, vortäuschen').richtig, true);
+  assert.equal(pruefeAntwort(quotus, [], 'quotus, quota, quotum, der wievielte, die wievielte, das wievielte').richtig, true);
+  assert.equal(pruefeAntwort(quotus, [], 'quotus,quota,quotum,der wievielte,die wievielte,das wievielte').richtig, true);
+  assert.equal(pruefeAntwort(quinEtiam, [], 'quin etiam, ja, sogar, vielmehr').richtig, true);
 });
 
 test('incomplete or wrong comma values stay wrong', () => {
-  assert.equal(pruefeAntwort(hic, [], 'hic, haec, hoc, dieser, diese').richtig, false);
-  assert.equal(pruefeAntwort(hic, [], 'hic, haec, hoc, dieser, diese, dieses, jener').richtig, false);
-  assert.equal(pruefeAntwort(simulare, ['praesens_1sg'], 'simulare, simulo, vortäuschen, so tun').richtig, false);
+  assert.equal(pruefeAntwort(quotus, [], 'quotus, quota, quotum, der wievielte, die wievielte').richtig, false);
+  assert.equal(pruefeAntwort(quotus, [], 'quotus, quota, quotum, der wievielte, die wievielte, das wievielte, der letzte').richtig, false);
+  assert.equal(pruefeAntwort(quinEtiam, [], 'quin etiam, vielmehr, ja').richtig, false);
 });
 
-const gens = {
+const nubes = {
   wortart: 'substantiv',
-  lemma: 'gēns',
-  formen: { genitiv_sg: 'gentis', genus: 'f', genitiv_pl: 'gentium' },
-  bedeutungen: [{ text: 'das Volk', typ: 'muss' }, { text: 'das Geschlecht', typ: 'muss' }],
+  lemma: 'nūbēs',
+  formen: { genitiv_sg: 'nūbis', genus: 'f', genitiv_pl: 'nūbium' },
+  bedeutungen: [{ text: 'die Wolke', typ: 'muss' }, { text: 'der Nebel', typ: 'muss' }],
 };
 
 test('genitive plural is quizzed when enabled', () => {
   const felder = ['genitiv_sg', 'genitiv_pl', 'genus'];
-  assert.equal(pruefeAntwort(gens, felder, 'gens, gentis, gentium, f, das Volk, das Geschlecht').richtig, true);
-  assert.equal(pruefeAntwort(gens, felder, 'gens, gentis, f, das Volk, das Geschlecht').richtig, false);
-  assert.equal(pruefeAntwort(gens, felder, 'gens, gentis, gentum, f, das Volk, das Geschlecht').richtig, false);
+  assert.equal(pruefeAntwort(nubes, felder, 'nubes, nubis, nubium, f, die Wolke, der Nebel').richtig, true);
+  assert.equal(pruefeAntwort(nubes, felder, 'nubes, nubis, f, die Wolke, der Nebel').richtig, false);
+  assert.equal(pruefeAntwort(nubes, felder, 'nubes, nubis, nubum, f, die Wolke, der Nebel').richtig, false);
 });
 
 test('genitive plural may be given voluntarily even when not quizzed', () => {
-  assert.equal(pruefeAntwort(gens, ['genus'], 'gens, gentium, f, das Volk, das Geschlecht').richtig, true);
+  assert.equal(pruefeAntwort(nubes, ['genus'], 'nubes, nubium, f, die Wolke, der Nebel').richtig, true);
 });
 
-test('genitive plural with optional letters (sēd(i)um) accepts both forms', () => {
-  const sedes = {
-    wortart: 'substantiv', lemma: 'sēdēs',
-    formen: { genitiv_sg: 'sēdis', genus: 'f', genitiv_pl: 'sēd(i)um' },
-    bedeutungen: [{ text: 'der Sitz', typ: 'muss' }],
+test('genitive plural with optional letters (ap(i)um) accepts both forms', () => {
+  const apis = {
+    wortart: 'substantiv', lemma: 'apis',
+    formen: { genitiv_sg: 'apis', genus: 'f', genitiv_pl: 'ap(i)um' },
+    bedeutungen: [{ text: 'die Biene', typ: 'muss' }],
   };
-  for (const gp of ['sedum', 'sedium']) {
-    assert.equal(pruefeAntwort(sedes, ['genitiv_pl'], `sedes, ${gp}, der Sitz`).richtig, true, gp);
+  for (const gp of ['apum', 'apium']) {
+    assert.equal(pruefeAntwort(apis, ['genitiv_pl'], `apis, ${gp}, die Biene`).richtig, true, gp);
   }
 });
 
@@ -142,15 +142,15 @@ test('no placeholders ("—", "-", empty) as form values in the vocabulary', () 
   assert.deepEqual(platzhalter, []);
 });
 
-test('vītāre: perfect passive participle vītātum is quizzed and accepted', () => {
-  const vitare = {
-    wortart: 'verb', lemma: 'vītāre',
-    formen: { praesens_1sg: 'vītō', perfekt_1sg: 'vītāvī', ppp: 'vītātum' },
-    bedeutungen: [{ text: '(ver)meiden', typ: 'muss' }],
+test('perfect passive participle (cantātum) is quizzed and accepted', () => {
+  const cantare = {
+    wortart: 'verb', lemma: 'cantāre',
+    formen: { praesens_1sg: 'cantō', perfekt_1sg: 'cantāvī', ppp: 'cantātum' },
+    bedeutungen: [{ text: 'singen', typ: 'muss' }],
   };
   const felder = ['praesens_1sg', 'perfekt_1sg', 'ppp'];
-  assert.equal(pruefeAntwort(vitare, felder, 'vitare, vito, vitavi, vitatum, meiden').richtig, true);
-  assert.equal(pruefeAntwort(vitare, felder, 'vitare, vito, vitavi, meiden').richtig, false);
+  assert.equal(pruefeAntwort(cantare, felder, 'cantare, canto, cantavi, cantatum, singen').richtig, true);
+  assert.equal(pruefeAntwort(cantare, felder, 'cantare, canto, cantavi, singen').richtig, false);
 });
 
 // Every optional ("kann") meaning given in addition to the correct answer
@@ -168,153 +168,154 @@ test('every optional meaning is accepted as an additional item', () => {
   assert.deepEqual(fehler, []);
 });
 
-// Genitive equal to nominative (orbis, orbis): naming it once is enough,
+// Genitive equal to nominative (ovis, ovis): naming it once is enough,
 // since the lemma itself is not rated - the segment belongs to the genitive.
 test('genitive equal to lemma counts even when named only once', () => {
-  const orbis = {
-    wortart: 'substantiv', lemma: 'orbis',
-    formen: { genitiv_sg: 'orbis', genus: 'm' },
-    bedeutungen: [{ text: 'der Kreis', typ: 'muss' }],
+  const ovis = {
+    wortart: 'substantiv', lemma: 'ovis',
+    formen: { genitiv_sg: 'ovis', genus: 'f' },
+    bedeutungen: [{ text: 'das Schaf', typ: 'muss' }],
   };
   const felder = ['genitiv_sg', 'genus'];
-  for (const antwort of ['orbis, m, der Kreis', 'orbis, orbis, m, der Kreis']) {
-    const ergebnis = pruefeAntwort(orbis, felder, antwort);
+  for (const antwort of ['ovis, f, das Schaf', 'ovis, ovis, f, das Schaf']) {
+    const ergebnis = pruefeAntwort(ovis, felder, antwort);
     assert.equal(ergebnis.richtig, true, antwort);
     assert.equal(ergebnis.formErgebnisse.genitiv_sg.ok, true, antwort);
   }
-  assert.equal(pruefeAntwort(orbis, felder, 'orbis, orbis, orbis, m, der Kreis').richtig, true);
-  assert.equal(pruefeAntwort(orbis, felder, 'm, der Kreis').richtig, false);
+  assert.equal(pruefeAntwort(ovis, felder, 'ovis, ovis, ovis, f, das Schaf').richtig, true);
+  assert.equal(pruefeAntwort(ovis, felder, 'f, das Schaf').richtig, false);
 });
 
 // Adjectives with a form missing in the data (e.g. no feminine, or neither
 // feminine nor neuter): the missing form is neither quizzed nor shown (in
 // red) in the solution - the display uses the same field list.
 test('adjectives without f/n form: only existing forms are active fields', () => {
-  const crudelis = { wortart: 'adjektiv', lemma: 'crūdēlis', formen: { n: 'crūdēle' }, bedeutungen: [] };
-  const vehemens = { wortart: 'adjektiv', lemma: 'vehemēns', formen: { genitiv: 'vehementis' }, bedeutungen: [] };
+  const tristis = { wortart: 'adjektiv', lemma: 'tristis', formen: { n: 'triste' }, bedeutungen: [] };
+  const prudens = { wortart: 'adjektiv', lemma: 'prūdēns', formen: { genitiv: 'prūdentis' }, bedeutungen: [] };
   const alleAdjektivFelder = ['f', 'n', 'genitiv'];
-  assert.deepEqual(aktiveAbfrageFelder(crudelis, alleAdjektivFelder), ['n']);
-  assert.deepEqual(aktiveAbfrageFelder(vehemens, alleAdjektivFelder), ['genitiv']);
+  assert.deepEqual(aktiveAbfrageFelder(tristis, alleAdjektivFelder), ['n']);
+  assert.deepEqual(aktiveAbfrageFelder(prudens, alleAdjektivFelder), ['genitiv']);
 });
 
-const dux = {
-  wortart: 'substantiv', lemma: 'dux',
-  formen: { genitiv_sg: 'ducis', genus: 'm/f' },
-  bedeutungen: [{ text: 'der/die Führer(in)', typ: 'muss' }, { text: 'der Feldherr', typ: 'muss' }],
+const artifex = {
+  wortart: 'substantiv', lemma: 'artifex',
+  formen: { genitiv_sg: 'artificis', genus: 'm/f' },
+  bedeutungen: [{ text: 'der/die Künstler(in)', typ: 'muss' }, { text: 'der Handwerker', typ: 'muss' }],
 };
 
-test('"der/die Führer(in)": masculine, feminine or both forms are accepted', () => {
-  for (const b of ['der Führer', 'die Führerin', 'der Führer, die Führerin',
-    'der Führer/die Führerin', 'der/die Führerin']) {
-    assert.equal(pruefeAntwort(dux, [], `dux, ${b}, der Feldherr`).richtig, true, b);
+test('"der/die Künstler(in)": masculine, feminine or both forms are accepted', () => {
+  for (const b of ['der Künstler', 'die Künstlerin', 'der Künstler, die Künstlerin',
+    'der Künstler/die Künstlerin', 'der/die Künstlerin']) {
+    assert.equal(pruefeAntwort(artifex, [], `artifex, ${b}, der Handwerker`).richtig, true, b);
   }
-  for (const b of ['der Führerin', 'die Führer', 'Führer']) {
-    assert.equal(pruefeAntwort(dux, [], `dux, ${b}, der Feldherr`).richtig, false, b);
+  for (const b of ['der Künstlerin', 'die Künstler', 'Künstler']) {
+    assert.equal(pruefeAntwort(artifex, [], `artifex, ${b}, der Handwerker`).richtig, false, b);
   }
 });
 
 test('two accepted genders: one, both ("m, f", "m/f", "m oder f") - but no wrong one', () => {
   for (const g of ['m', 'f', 'm, f', 'f, m', 'm/f', 'm oder f', 'maskulinum, femininum']) {
-    const ergebnis = pruefeAntwort(dux, ['genus'], `dux, ${g}, der Führer, der Feldherr`);
+    const ergebnis = pruefeAntwort(artifex, ['genus'], `artifex, ${g}, der Künstler, der Handwerker`);
     assert.equal(ergebnis.richtig, true, g);
     assert.equal(ergebnis.genusErgebnis.ok, true, g);
   }
   for (const g of ['n', 'm, n', 'm/f/n']) {
-    assert.equal(pruefeAntwort(dux, ['genus'], `dux, ${g}, der Führer, der Feldherr`).richtig, false, g);
+    assert.equal(pruefeAntwort(artifex, ['genus'], `artifex, ${g}, der Künstler, der Handwerker`).richtig, false, g);
   }
 });
 
 test('only one accepted gender: giving two is wrong', () => {
-  const sol = {
-    wortart: 'substantiv', lemma: 'sōl', formen: { genitiv_sg: 'sōlis', genus: 'm' },
-    bedeutungen: [{ text: 'die Sonne', typ: 'muss' }],
+  const lupus = {
+    wortart: 'substantiv', lemma: 'lupus', formen: { genitiv_sg: 'lupī', genus: 'm' },
+    bedeutungen: [{ text: 'der Wolf', typ: 'muss' }],
   };
-  assert.equal(pruefeAntwort(sol, ['genus'], 'sol, m, die Sonne').richtig, true);
-  assert.equal(pruefeAntwort(sol, ['genus'], 'sol, m, f, die Sonne').richtig, false);
-  assert.equal(pruefeAntwort(sol, ['genus'], 'sol, m/f, die Sonne').richtig, false);
+  assert.equal(pruefeAntwort(lupus, ['genus'], 'lupus, m, der Wolf').richtig, true);
+  assert.equal(pruefeAntwort(lupus, ['genus'], 'lupus, m, f, der Wolf').richtig, false);
+  assert.equal(pruefeAntwort(lupus, ['genus'], 'lupus, m/f, der Wolf').richtig, false);
 });
 
-test('coniūnx: "die Ehefrau, der Ehemann" and "f, m" are accepted', () => {
-  const coniunx = {
-    wortart: 'substantiv', lemma: 'coniūnx', formen: { genitiv_sg: 'coniugis', genus: 'f/m' },
-    bedeutungen: [{ text: 'die (Ehe-)Frau/der (Ehe-)Mann', typ: 'muss' }],
+test('cōnsors: "die Briefpartnerin, der Briefpartner" and "f, m" are accepted', () => {
+  const consors = {
+    wortart: 'substantiv', lemma: 'cōnsors', formen: { genitiv_sg: 'cōnsortis', genus: 'f/m' },
+    bedeutungen: [{ text: 'die (Brief-)Partnerin/der (Brief-)Partner', typ: 'muss' }],
   };
-  for (const a of ['coniunx, m, f, die Ehefrau, der Ehemann', 'coniunx, f/m, die Frau', 'coniunx, m, der Mann']) {
-    assert.equal(pruefeAntwort(coniunx, ['genus'], a).richtig, true, a);
+  for (const a of ['consors, m, f, die Briefpartnerin, der Briefpartner', 'consors, f/m, die Partnerin', 'consors, m, der Partner']) {
+    assert.equal(pruefeAntwort(consors, ['genus'], a).richtig, true, a);
   }
 });
 
 // Irregular imperatives (fac, dūc, fer) have their own field.
-test('imperative singular (fac) is accepted and can be quizzed', () => {
-  const facere = {
-    wortart: 'verb', lemma: 'facere',
-    formen: { praesens_1sg: 'faciō', perfekt_1sg: 'fēcī', ppp: 'factum', imperativ_sg: 'fac' },
-    bedeutungen: [{ text: 'machen', typ: 'muss' }, { text: '(m. doppeltem Akk.) (jmdn.) machen (zu)', typ: 'kann' }],
+test('imperative singular (ēdūc) is accepted and can be quizzed', () => {
+  const educere = {
+    wortart: 'verb', lemma: 'ēdūcere',
+    formen: { praesens_1sg: 'ēdūcō', perfekt_1sg: 'ēdūxī', ppp: 'ēductum', imperativ_sg: 'ēdūc' },
+    bedeutungen: [{ text: 'herausführen', typ: 'muss' }, { text: '(Truppen) ausrücken lassen', typ: 'kann' }],
   };
   const standard = ['praesens_1sg'];
-  assert.equal(pruefeAntwort(facere, standard, 'facere, facio, fac, machen').richtig, true);
+  assert.equal(pruefeAntwort(educere, standard, 'educere, educo, educ, herausführen').richtig, true);
   const mitImperativ = ['praesens_1sg', 'imperativ_sg'];
-  assert.equal(pruefeAntwort(facere, mitImperativ, 'facere, facio, fac, machen').richtig, true);
-  assert.equal(pruefeAntwort(facere, mitImperativ, 'facere, facio, machen').richtig, false);
+  assert.equal(pruefeAntwort(educere, mitImperativ, 'educere, educo, educ, herausführen').richtig, true);
+  assert.equal(pruefeAntwort(educere, mitImperativ, 'educere, educo, herausführen').richtig, false);
 });
 
 // Ellipses in meanings: the way the dots are typed does not matter, and a
 // comma in their place or no dots at all also count.
-test('"sowohl ... als auch": ellipsis, comma or nothing', () => {
-  const etEt = {
-    wortart: 'sonstiges', lemma: 'et ... et', formen: {},
-    bedeutungen: [{ text: 'sowohl ... als auch', typ: 'muss' }, { text: 'einerseits ... andererseits', typ: 'muss' }],
+test('"sei es ... sei es": ellipsis, comma or nothing', () => {
+  const siveSive = {
+    wortart: 'sonstiges', lemma: 'sīve ... sīve', formen: {},
+    bedeutungen: [{ text: 'sei es ... sei es', typ: 'muss' }, { text: 'ob ... oder', typ: 'muss' }],
   };
-  const andere = 'einerseits ... andererseits';
-  for (const b of ['sowohl ... als auch', 'sowohl...als auch', 'sowohl … als auch',
-    'sowohl, als auch', 'sowohl als auch']) {
-    assert.equal(pruefeAntwort(etEt, [], `et et, ${b}, ${andere}`).richtig, true, b);
+  const andere = 'ob ... oder';
+  for (const b of ['sei es ... sei es', 'sei es...sei es', 'sei es … sei es',
+    'sei es, sei es', 'sei es sei es']) {
+    assert.equal(pruefeAntwort(siveSive, [], `sive sive, ${b}, ${andere}`).richtig, true, b);
   }
-  assert.equal(pruefeAntwort(etEt, [], 'et et, sowohl, einerseits, andererseits').richtig, false);
-  assert.equal(pruefeAntwort(etEt, [], 'et et, sowohl als auch, einerseits').richtig, false);
+  assert.equal(pruefeAntwort(siveSive, [], 'sive sive, sei es, ob, oder').richtig, false);
+  assert.equal(pruefeAntwort(siveSive, [], 'sive sive, sei es sei es, ob').richtig, false);
 });
 
 test('comma values still work even though commas also separate items', () => {
-  const quiQuaeQuod = {
-    wortart: 'sonstiges', lemma: 'quī, quae, quod', formen: {},
-    bedeutungen: [{ text: 'der, die, das', typ: 'muss' }, { text: 'wer, was', typ: 'muss' }],
+  const quicumque = {
+    wortart: 'sonstiges', lemma: 'quīcumque, quaecumque, quodcumque', formen: {},
+    bedeutungen: [{ text: 'jeder, der', typ: 'muss' }, { text: 'wer auch immer, was auch immer', typ: 'muss' }],
   };
-  assert.equal(pruefeAntwort(quiQuaeQuod, [], 'qui, quae, quod, der, die, das, wer, was').richtig, true);
-  assert.equal(pruefeAntwort(quiQuaeQuod, [], 'qui, quae, quod, der, die, wer, was').richtig, false);
+  const lemma = 'quicumque, quaecumque, quodcumque';
+  assert.equal(pruefeAntwort(quicumque, [], `${lemma}, jeder, der, wer auch immer, was auch immer`).richtig, true);
+  assert.equal(pruefeAntwort(quicumque, [], `${lemma}, jeder, der, wer auch immer`).richtig, false);
 });
 
-// āiō/ait: required "ich sage", "er, sie, es sagt"; optional "(ich)
-// behaupte", "(er, sie, es) behauptet" - optional parts with and without
+// volō/vult: required "ich will", "er, sie, es will"; optional "(ich)
+// wünsche", "(er, sie, es) wünscht" - optional parts with and without
 // pronoun, and the commas inside values and parentheses must not confuse
 // the matching.
-test('āiō/ait: required and optional parts containing commas are matched correctly', () => {
-  const aio = {
-    wortart: 'sonstiges', lemma: 'āiō/ait', formen: {},
+test('volō/vult: required and optional parts containing commas are matched correctly', () => {
+  const volo = {
+    wortart: 'sonstiges', lemma: 'volō/vult', formen: {},
     bedeutungen: [
-      { text: 'ich sage', typ: 'muss' }, { text: '(ich) behaupte', typ: 'kann' },
-      { text: 'er, sie, es sagt', typ: 'muss' }, { text: '(er, sie, es) behauptet', typ: 'kann' },
+      { text: 'ich will', typ: 'muss' }, { text: '(ich) wünsche', typ: 'kann' },
+      { text: 'er, sie, es will', typ: 'muss' }, { text: '(er, sie, es) wünscht', typ: 'kann' },
     ],
   };
-  for (const a of ['aio, ich sage, er, sie, es sagt',
-    'aio, ich sage, behaupte, er, sie, es sagt, behauptet',
-    'aio, ich sage, ich behaupte, er, sie, es sagt, er, sie, es behauptet']) {
-    assert.equal(pruefeAntwort(aio, [], a).richtig, true, a);
+  for (const a of ['volo, ich will, er, sie, es will',
+    'volo, ich will, wünsche, er, sie, es will, wünscht',
+    'volo, ich will, ich wünsche, er, sie, es will, er, sie, es wünscht']) {
+    assert.equal(pruefeAntwort(volo, [], a).richtig, true, a);
   }
-  assert.equal(pruefeAntwort(aio, [], 'aio, ich sage, behaupte').richtig, false);
-  assert.equal(pruefeAntwort(aio, [], 'aio, er, sie, es sagt').richtig, false);
+  assert.equal(pruefeAntwort(volo, [], 'volo, ich will, wünsche').richtig, false);
+  assert.equal(pruefeAntwort(volo, [], 'volo, er, sie, es will').richtig, false);
 });
 
-// Meaning typed literally, parentheses included ("(be)grüßen" for
-// salūtāre) - user feedback 2026-10-29.
+// Meaning typed literally, parentheses included (e.g. "(be)glückwünschen")
+// - user feedback 2026-10-29.
 test('meaning typed exactly as listed, with parentheses, is accepted', () => {
-  const salutare = {
-    wortart: 'verb', lemma: 'salūtāre',
-    formen: { praesens_1sg: 'salūtō', perfekt_1sg: 'salūtāvī' },
-    bedeutungen: [{ text: '(be)grüßen', typ: 'muss' }],
+  const gratulari = {
+    wortart: 'verb', lemma: 'grātulārī',
+    formen: { praesens_1sg: 'grātulor', perfekt_1sg: 'grātulātus sum' },
+    bedeutungen: [{ text: '(be)glückwünschen', typ: 'muss' }],
   };
   const felder = ['praesens_1sg', 'perfekt_1sg'];
-  for (const bedeutung of ['(be)grüßen', '(be)gruessen', 'begrüßen', 'grüßen']) {
-    assert.equal(pruefeAntwort(salutare, felder, `salutare, saluto, salutavi, ${bedeutung}`).richtig, true, bedeutung);
+  for (const bedeutung of ['(be)glückwünschen', '(be)glueckwuenschen', 'beglückwünschen', 'glückwünschen']) {
+    assert.equal(pruefeAntwort(gratulari, felder, `gratulari, gratulor, gratulatus sum, ${bedeutung}`).richtig, true, bedeutung);
   }
 });
 
@@ -339,24 +340,24 @@ test('every meaning with parentheses is accepted when typed exactly as listed', 
 // "/" between single words of a longer expression: each full expression
 // counts on its own, and both together - user feedback 2026-10-29.
 test('slash between single words: every full expression is accepted', () => {
-  const salve = {
-    wortart: 'sonstiges', lemma: 'salvē!/salvēte!', formen: {},
-    bedeutungen: [{ text: 'sei/seid gegrüßt!', typ: 'muss' }],
+  const tace = {
+    wortart: 'sonstiges', lemma: 'tacē!/tacēte!', formen: {},
+    bedeutungen: [{ text: 'sei/seid still!', typ: 'muss' }],
   };
-  for (const bedeutung of ['sei gegrüßt', 'seid gegrüßt!', 'sei gegrüßt, seid gegrüßt', 'sei/seid gegrüßt!']) {
-    assert.equal(pruefeAntwort(salve, [], `salve, ${bedeutung}`).richtig, true, bedeutung);
+  for (const bedeutung of ['sei still', 'seid still!', 'sei still, seid still', 'sei/seid still!']) {
+    assert.equal(pruefeAntwort(tace, [], `tace, ${bedeutung}`).richtig, true, bedeutung);
   }
   // One side alone is incomplete and does not count.
-  for (const bedeutung of ['sei', 'seid gegrüßt, sei']) {
-    assert.equal(pruefeAntwort(salve, [], `salve, ${bedeutung}`).richtig, false, bedeutung);
+  for (const bedeutung of ['sei', 'seid still, sei']) {
+    assert.equal(pruefeAntwort(tace, [], `tace, ${bedeutung}`).richtig, false, bedeutung);
   }
-  assert.deepEqual(sollVarianten('die linke Hand/Seite').sort(),
-    ['die linke Hand', 'die linke Hand/Seite', 'die linke Seite']);
+  assert.deepEqual(sollVarianten('die vordere Tür/Seite').sort(),
+    ['die vordere Seite', 'die vordere Tür', 'die vordere Tür/Seite']);
   // Left side ends with "!"/"?": both sides are complete exclamations.
-  assert.deepEqual(sollVarianten('sieh da!/seht!').sort(), ['seht!', 'sieh da!', 'sieh da!/seht!']);
+  assert.deepEqual(sollVarianten('hör zu!/hört!').sort(), ['hör zu!', 'hör zu!/hört!', 'hört!']);
   // Both sides several words: already complete alternatives, nothing mixed.
-  assert.deepEqual(sollVarianten('der Diener/die Dienerin').sort(),
-    ['der Diener', 'der Diener/die Dienerin', 'die Dienerin']);
+  assert.deepEqual(sollVarianten('der Lehrer/die Lehrerin').sort(),
+    ['der Lehrer', 'der Lehrer/die Lehrerin', 'die Lehrerin']);
 });
 
 test('every meaning with a slash is accepted with each full expression', () => {
@@ -369,7 +370,7 @@ test('every meaning with a slash is accepted with each full expression', () => {
       : sollVarianten(vokabel.formen[f])[0]))];
     const muss = vokabel.bedeutungen.filter(b => b.typ === 'muss');
     muss.forEach((b, i) => {
-      // "der/die Bürger(in)" has its own rule (ARTIKEL_PAAR), tested elsewhere.
+      // "der/die Künstler(in)" has its own rule (ARTIKEL_PAAR), tested elsewhere.
       if (b.text.startsWith('der/die ')) return;
       const seiten = b.text.split('/');
       if (seiten.length !== 2) return;
@@ -390,43 +391,47 @@ test('every meaning with a slash is accepted with each full expression', () => {
 });
 
 // Missing-article follow-up only for meanings that start with der/die/das:
-// "sehen" + "das" must not pass as "da stehen" via typo tolerance.
+// "leiben" + "das" must not pass as "da bleiben" via typo tolerance.
 test('no article follow-up for a meaning without an article', () => {
-  const stare = {
-    wortart: 'verb', lemma: 'stāre',
-    formen: { praesens_1sg: 'stō', perfekt_1sg: 'stetī' },
-    bedeutungen: [{ text: '(da)stehen', typ: 'muss' }],
+  const remanere = {
+    wortart: 'verb', lemma: 'remanēre',
+    formen: { praesens_1sg: 'remaneō', perfekt_1sg: 'remānsī' },
+    bedeutungen: [{ text: '(da)bleiben', typ: 'muss' }],
   };
-  const [bedeutung] = pruefeAntwort(stare, ['praesens_1sg'], 'stare, sto, sehen').bedeutungErgebnisse;
+  const [bedeutung] = pruefeAntwort(remanere, ['praesens_1sg'], 'remanere, remaneo, leiben').bedeutungErgebnisse;
   assert.equal(bedeutung.ok, false);
   assert.equal(bedeutung.fehltNurArtikel, false);
-  const sol = {
-    wortart: 'substantiv', lemma: 'sōl', formen: {},
-    bedeutungen: [{ text: 'die Sonne', typ: 'muss' }],
+  const lupus = {
+    wortart: 'substantiv', lemma: 'lupus', formen: {},
+    bedeutungen: [{ text: 'der Wolf', typ: 'muss' }],
   };
-  assert.equal(pruefeAntwort(sol, [], 'sol, Sonne').bedeutungErgebnisse[0].fehltNurArtikel, true);
+  assert.equal(pruefeAntwort(lupus, [], 'lupus, Wolf').bedeutungErgebnisse[0].fehltNurArtikel, true);
 });
 
-// Optional meaning given without its article ("Stille" for silentium): it is
-// recognised as such, so the follow-up can ask for the article.
+// Optional meaning given without its article ("Windstille" for
+// tranquillitās): it is recognised as such, so the follow-up can ask for
+// the article.
 test('missing article is detected for optional meanings too', () => {
-  const silentium = {
-    wortart: 'substantiv', lemma: 'silentium',
-    formen: { genitiv_sg: 'silentiī', genus: 'n' },
+  const tranquillitas = {
+    wortart: 'substantiv', lemma: 'tranquillitās',
+    formen: { genitiv_sg: 'tranquillitātis', genus: 'f' },
     bedeutungen: [
-      { text: 'die Ruhe', typ: 'muss' },
-      { text: 'die Stille', typ: 'kann' },
-      { text: 'das Schweigen', typ: 'kann' },
+      { text: 'die Gelassenheit', typ: 'muss' },
+      { text: 'die Windstille', typ: 'kann' },
+      { text: 'das Gleichmaß', typ: 'kann' },
     ],
   };
-  const ergebnis = pruefeAntwort(silentium, [], 'silentium, Stille');
+  const ergebnis = pruefeAntwort(tranquillitas, [], 'tranquillitas, Windstille');
   assert.equal(ergebnis.bedeutungErgebnisse[0].fehltNurArtikel, false);
   assert.equal(ergebnis.kannBedeutungErgebnisse[0].fehltNurArtikel, true);
-  assert.equal(ergebnis.kannBedeutungErgebnisse[0].artikelKandidatSegment, 'Stille');
+  assert.equal(ergebnis.kannBedeutungErgebnisse[0].artikelKandidatSegment, 'Windstille');
   assert.equal(ergebnis.kannBedeutungErgebnisse[1].fehltNurArtikel, false);
   // A segment is the article candidate of at most one meaning.
-  const doppelt = { ...silentium, bedeutungen: [{ text: 'die Ruhe', typ: 'muss' }, { text: 'die Ruhe', typ: 'kann' }] };
-  const r = pruefeAntwort(doppelt, [], 'silentium, Ruhe');
+  const doppelt = {
+    ...tranquillitas,
+    bedeutungen: [{ text: 'die Gelassenheit', typ: 'muss' }, { text: 'die Gelassenheit', typ: 'kann' }],
+  };
+  const r = pruefeAntwort(doppelt, [], 'tranquillitas, Gelassenheit');
   assert.equal(r.bedeutungErgebnisse[0].fehltNurArtikel, true);
   assert.equal(r.kannBedeutungErgebnisse[0].fehltNurArtikel, false);
 });
@@ -435,45 +440,46 @@ test('missing article is detected for optional meanings too', () => {
 // ("Genus kannst du einfach mit dazusagen"). Previously only the first one
 // was recognised, the second meaning counted as a wrong extra item.
 test('two genders, each attached to its meaning, are accepted', () => {
-  const servus = {
-    wortart: 'substantiv', lemma: 'servus/serva', formen: { genus: 'm/f' },
-    bedeutungen: [{ text: 'der Sklave/die Sklavin', typ: 'muss' }],
+  const discipulus = {
+    wortart: 'substantiv', lemma: 'discipulus/discipula', formen: { genus: 'm/f' },
+    bedeutungen: [{ text: 'der Schüler/die Schülerin', typ: 'muss' }],
   };
   for (const antwort of [
-    'servus, der Sklave maskulinum, die Sklavin femininum',
-    'servus, maskulinum der Sklave, femininum die Sklavin',
-    'servus, der Sklave maskulinum',
-    'servus, maskulinum oder femininum, der Sklave',
+    'discipulus, der Schüler maskulinum, die Schülerin femininum',
+    'discipulus, maskulinum der Schüler, femininum die Schülerin',
+    'discipulus, der Schüler maskulinum',
+    'discipulus, maskulinum oder femininum, der Schüler',
   ]) {
-    assert.equal(pruefeAntwort(servus, ['genus'], antwort).richtig, true, antwort);
+    assert.equal(pruefeAntwort(discipulus, ['genus'], antwort).richtig, true, antwort);
   }
   // a gender that does not fit still makes the answer wrong
-  assert.equal(pruefeAntwort(servus, ['genus'], 'servus, der Sklave maskulinum, die Sklavin neutrum').richtig, false);
+  assert.equal(pruefeAntwort(discipulus, ['genus'], 'discipulus, der Schüler maskulinum, die Schülerin neutrum').richtig, false);
   // one-gender noun: a second, different gender is wrong
-  const sol = { wortart: 'substantiv', lemma: 'sōl', formen: { genus: 'm' }, bedeutungen: [{ text: 'die Sonne', typ: 'muss' }, { text: 'der Tag', typ: 'kann' }] };
-  assert.equal(pruefeAntwort(sol, ['genus'], 'sol, die Sonne maskulinum, der Tag femininum').richtig, false);
-  assert.equal(pruefeAntwort(sol, ['genus'], 'sol, die Sonne maskulinum, der Tag maskulinum').richtig, true);
+  const lupus = { wortart: 'substantiv', lemma: 'lupus', formen: { genus: 'm' }, bedeutungen: [{ text: 'der Wolf', typ: 'muss' }, { text: 'der Räuber', typ: 'kann' }] };
+  assert.equal(pruefeAntwort(lupus, ['genus'], 'lupus, der Wolf maskulinum, der Räuber femininum').richtig, false);
+  assert.equal(pruefeAntwort(lupus, ['genus'], 'lupus, der Wolf maskulinum, der Räuber maskulinum').richtig, true);
 });
 
-// Article follow-up when the gender was attached to the meaning ("Sonne m"):
-// the answer "die" must go in front of "Sonne" inside that segment, not
+// Article follow-up when the gender was attached to the meaning ("Wolf m"):
+// the answer "der" must go in front of "Wolf" inside that segment, not
 // become a separate segment that counts as a second (wrong) gender.
 test('article follow-up works when the gender is attached to the meaning', () => {
-  const sol = {
-    wortart: 'substantiv', lemma: 'sōl', formen: { genitiv_sg: 'sōlis', genus: 'm' },
-    bedeutungen: [{ text: 'die Sonne', typ: 'muss' }],
+  const lupus = {
+    wortart: 'substantiv', lemma: 'lupus', formen: { genitiv_sg: 'lupī', genus: 'm' },
+    bedeutungen: [{ text: 'der Wolf', typ: 'muss' }],
   };
-  for (const erste of ['sol, solis, Sonne m', 'sol, solis, maskulinum Sonne', 'sol, solis, m, Sonne']) {
-    const ergebnis = pruefeAntwort(sol, ['genitiv_sg', 'genus'], erste);
+  for (const erste of ['lupus, lupi, Wolf m', 'lupus, lupi, maskulinum Wolf', 'lupus, lupi, m, Wolf']) {
+    const ergebnis = pruefeAntwort(lupus, ['genitiv_sg', 'genus'], erste);
     const [bedeutung] = ergebnis.bedeutungErgebnisse;
     assert.equal(bedeutung.fehltNurArtikel, true, erste);
-    const eintrag = { segment: bedeutung.artikelKandidatSegment, korrektesWort: 'Sonne' };
-    for (const antwort of ['die', 'die Sonne']) {
+    const eintrag = { segment: bedeutung.artikelKandidatSegment, korrektesWort: 'Wolf' };
+    for (const antwort of ['der', 'der Wolf']) {
       const rohtext = kombiniereRohtext(eintrag, erste, antwort);
-      assert.equal(pruefeAntwort(sol, ['genitiv_sg', 'genus'], rohtext).richtig, true, `${erste} + ${antwort}: ${rohtext}`);
+      assert.equal(pruefeAntwort(lupus, ['genitiv_sg', 'genus'], rohtext).richtig, true, `${erste} + ${antwort}: ${rohtext}`);
     }
   }
 });
+
 
 const fodere = {
   wortart: 'verb',

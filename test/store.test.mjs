@@ -38,7 +38,7 @@ function seedMit(...vokabeln) {
   return { version: 1, lektionen: [{ lektion: 1, vokabeln }] };
 }
 
-const sol = { id: 'L01-001', wortart: 'substantiv', lemma: 'sōl', formen: { genus: 'm' }, bedeutungen: [{ text: 'die Sonne', typ: 'muss' }] };
+const asinus = { id: 'L01-001', wortart: 'substantiv', lemma: 'asinus', formen: { genus: 'm' }, bedeutungen: [{ text: 'der Esel', typ: 'muss' }] };
 const luna = { id: 'L01-002', wortart: 'substantiv', lemma: 'lūna', formen: { genus: 'f' }, bedeutungen: [{ text: 'der Mond', typ: 'muss' }] };
 const geuebt = { level: 4, fehler: 1, zuletzt: 123, rueckfragen: 0 };
 
@@ -51,8 +51,8 @@ function storeAus(seedJson) {
 }
 
 test('aktualisiereWortschatz: new word is added with fresh progress', () => {
-  const store = storeAus(seedMit(sol));
-  const anzahl = aktualisiereWortschatz(store, seedMit(sol, luna));
+  const store = storeAus(seedMit(asinus));
+  const anzahl = aktualisiereWortschatz(store, seedMit(asinus, luna));
   assert.deepEqual(anzahl, { neu: 1, aktualisiert: 0, entfernt: 0 });
   assert.equal(store.vokabeln['L01-002'].lemma, 'lūna');
   assert.equal(store.vokabeln['L01-002'].lektion, 1);
@@ -61,54 +61,54 @@ test('aktualisiereWortschatz: new word is added with fresh progress', () => {
 });
 
 test('aktualisiereWortschatz: corrected word is updated, progress kept', () => {
-  const store = storeAus(seedMit(sol));
-  const korrigiert = { ...sol, bedeutungen: [...sol.bedeutungen, { text: 'der Tag', typ: 'kann' }] };
+  const store = storeAus(seedMit(asinus));
+  const korrigiert = { ...asinus, bedeutungen: [...asinus.bedeutungen, { text: 'der Dummkopf', typ: 'kann' }] };
   assert.deepEqual(aktualisiereWortschatz(store, seedMit(korrigiert)), { neu: 0, aktualisiert: 1, entfernt: 0 });
   assert.equal(store.vokabeln['L01-001'].bedeutungen.length, 2);
   assert.deepEqual(store.fortschritt['L01-001'], geuebt);
 });
 
 test('aktualisiereWortschatz: same ID with a different Latin word resets progress', () => {
-  const store = storeAus(seedMit(sol));
+  const store = storeAus(seedMit(asinus));
   aktualisiereWortschatz(store, seedMit({ ...luna, id: 'L01-001' }));
   assert.equal(store.vokabeln['L01-001'].lemma, 'lūna');
   assert.deepEqual(store.fortschritt['L01-001'], neuerFortschrittEintrag());
 });
 
 test('aktualisiereWortschatz: word edited on the device is kept', () => {
-  const store = storeAus(seedMit(sol));
-  store.vokabeln['L01-001'] = { ...sol, lektion: 1, bedeutungen: [{ text: 'die liebe Sonne', typ: 'muss' }], bearbeitet: true };
-  const korrigiert = { ...sol, bedeutungen: [{ text: 'die Sonne (Gott)', typ: 'muss' }] };
+  const store = storeAus(seedMit(asinus));
+  store.vokabeln['L01-001'] = { ...asinus, lektion: 1, bedeutungen: [{ text: 'der liebe Esel', typ: 'muss' }], bearbeitet: true };
+  const korrigiert = { ...asinus, bedeutungen: [{ text: 'der Esel (Tier)', typ: 'muss' }] };
   assert.deepEqual(aktualisiereWortschatz(store, seedMit(korrigiert)), { neu: 0, aktualisiert: 0, entfernt: 0 });
-  assert.equal(store.vokabeln['L01-001'].bedeutungen[0].text, 'die liebe Sonne');
+  assert.equal(store.vokabeln['L01-001'].bedeutungen[0].text, 'der liebe Esel');
 });
 
 test('aktualisiereWortschatz: word deleted on the device stays deleted', () => {
-  const store = storeAus(seedMit(sol, luna));
+  const store = storeAus(seedMit(asinus, luna));
   delete store.vokabeln['L01-002'];
   delete store.fortschritt['L01-002'];
   store.geloeschteIds.push('L01-002');
-  assert.deepEqual(aktualisiereWortschatz(store, seedMit(sol, luna)), { neu: 0, aktualisiert: 0, entfernt: 0 });
+  assert.deepEqual(aktualisiereWortschatz(store, seedMit(asinus, luna)), { neu: 0, aktualisiert: 0, entfernt: 0 });
   assert.equal(store.vokabeln['L01-002'], undefined);
 });
 
 test('aktualisiereWortschatz: word removed from the app is removed unless edited', () => {
-  const store = storeAus(seedMit(sol, luna));
-  assert.deepEqual(aktualisiereWortschatz(store, seedMit(sol)), { neu: 0, aktualisiert: 0, entfernt: 1 });
+  const store = storeAus(seedMit(asinus, luna));
+  assert.deepEqual(aktualisiereWortschatz(store, seedMit(asinus)), { neu: 0, aktualisiert: 0, entfernt: 1 });
   assert.equal(store.vokabeln['L01-002'], undefined);
   assert.equal(store.fortschritt['L01-002'], undefined);
 
-  const bearbeitet = storeAus(seedMit(sol, luna));
+  const bearbeitet = storeAus(seedMit(asinus, luna));
   bearbeitet.vokabeln['L01-002'].bearbeitet = true;
-  aktualisiereWortschatz(bearbeitet, seedMit(sol));
+  aktualisiereWortschatz(bearbeitet, seedMit(asinus));
   assert.equal(bearbeitet.vokabeln['L01-002'].lemma, 'lūna');
 });
 
 test('aktualisiereWortschatz: word created on the device is kept', () => {
-  const store = storeAus(seedMit(sol));
+  const store = storeAus(seedMit(asinus));
   store.vokabeln['L01-033'] = { ...luna, id: 'L01-033', lektion: 1, bearbeitet: true };
   store.fortschritt['L01-033'] = { ...geuebt };
-  assert.deepEqual(aktualisiereWortschatz(store, seedMit(sol)), { neu: 0, aktualisiert: 0, entfernt: 0 });
+  assert.deepEqual(aktualisiereWortschatz(store, seedMit(asinus)), { neu: 0, aktualisiert: 0, entfernt: 0 });
   assert.equal(store.vokabeln['L01-033'].lemma, 'lūna');
 });
 
@@ -122,9 +122,9 @@ test('aktualisiereWortschatz: unchanged vocabulary changes nothing (every start)
 // --- setzeWortschatzZurueck: "Wortschatz zurücksetzen" ---
 
 test('setzeWortschatzZurueck: edited, created and deleted words go back to the shipped state', () => {
-  const store = storeAus(seedMit(sol, luna));
+  const store = storeAus(seedMit(asinus, luna));
   // edited on the device
-  store.vokabeln['L01-001'] = { ...store.vokabeln['L01-001'], bedeutungen: [{ text: 'die liebe Sonne', typ: 'muss' }], bearbeitet: true };
+  store.vokabeln['L01-001'] = { ...store.vokabeln['L01-001'], bedeutungen: [{ text: 'der liebe Esel', typ: 'muss' }], bearbeitet: true };
   // created on the device
   store.vokabeln['L01-003'] = { ...luna, id: 'L01-003', lemma: 'stella', lektion: 1, bearbeitet: true };
   store.fortschritt['L01-003'] = { ...geuebt };
@@ -133,8 +133,8 @@ test('setzeWortschatzZurueck: edited, created and deleted words go back to the s
   delete store.fortschritt['L01-002'];
   store.geloeschteIds.push('L01-002');
 
-  assert.deepEqual(setzeWortschatzZurueck(store, seedMit(sol, luna)), { zurueckgesetzt: 1, entfernt: 1, wiederhergestellt: 1 });
-  assert.deepEqual(store.vokabeln, storeAus(seedMit(sol, luna)).vokabeln);
+  assert.deepEqual(setzeWortschatzZurueck(store, seedMit(asinus, luna)), { zurueckgesetzt: 1, entfernt: 1, wiederhergestellt: 1 });
+  assert.deepEqual(store.vokabeln, storeAus(seedMit(asinus, luna)).vokabeln);
   assert.deepEqual(store.fortschritt['L01-001'], geuebt);
   assert.deepEqual(store.fortschritt['L01-002'], neuerFortschrittEintrag());
   assert.equal(store.fortschritt['L01-003'], undefined);
@@ -142,10 +142,10 @@ test('setzeWortschatzZurueck: edited, created and deleted words go back to the s
 });
 
 test('setzeWortschatzZurueck: edited word that became another Latin word loses its progress', () => {
-  const store = storeAus(seedMit(sol));
+  const store = storeAus(seedMit(asinus));
   store.vokabeln['L01-001'] = { ...store.vokabeln['L01-001'], lemma: 'stella', bearbeitet: true };
-  setzeWortschatzZurueck(store, seedMit(sol));
-  assert.equal(store.vokabeln['L01-001'].lemma, 'sōl');
+  setzeWortschatzZurueck(store, seedMit(asinus));
+  assert.equal(store.vokabeln['L01-001'].lemma, 'asinus');
   assert.deepEqual(store.fortschritt['L01-001'], neuerFortschrittEintrag());
 });
 
@@ -160,7 +160,7 @@ test('setzeWortschatzZurueck: unchanged vocabulary changes nothing', () => {
 test('setzeFortschrittZurueck: every word new again, profile and settings kept', () => {
   const geuebt = { level: 3, fehler: 2, zuletzt: 1000, rueckfragen: 1 };
   const store = {
-    vokabeln: { 'L01-001': sol, 'L01-002': luna },
+    vokabeln: { 'L01-001': asinus, 'L01-002': luna },
     fortschritt: { 'L01-001': geuebt, 'L01-002': neuerFortschrittEintrag(), 'L09-001': geuebt },
     profil: { name: 'A', aktuelleLektion: 3, aktuelleBisId: null, letzteAbfrage: auswahl },
     einstellungen: { rueckfragen_aktiv: true },

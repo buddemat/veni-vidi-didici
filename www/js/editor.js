@@ -174,7 +174,7 @@ function bedeutungsFeld(containerEl, anfangsWerte) {
 }
 
 // Genus als Checkbox-Gruppe statt Freitext: verhindert Tippfehler/beliebigen
-// Text und deckt Wörter mit mehreren Genera ab (z.B. "servus/serva" -> "m/f",
+// Text und deckt Wörter mit mehreren Genera ab (z.B. "discipulus/discipula" -> "m/f",
 // mehrere Haken -> mit "/" verbunden). Das zurückgegebene Objekt hat eine
 // `value`-Eigenschaft, damit es sich wie die echten Text-Eingaben verhält.
 const GENUS_OPTIONEN = [
