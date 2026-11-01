@@ -17,6 +17,8 @@ tools/audio/
 # --- Not shared yet ---
 # CSV import tool
 tools/csv2json.js
+# Icon preview (only used to choose the icon)
+assets/icon-vorschau.png
 
 # --- Notes and docs: only the README is shared ---
 *.md
