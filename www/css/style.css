@@ -502,6 +502,19 @@ details .karte {
   min-width: 140px;
 }
 
+/* "Prüfen" (bzw. "Weiter" bei einer Rückfrage) und darunter "Ich weiß es
+   nicht": untereinander, mittig. */
+.antwort-knoepfe:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.antwort-knoepfe button {
+  min-width: 180px;
+}
+
 /* Knopfreihe nach dem Prüfen ("Als richtig werten" + "Weiter"): mittig,
    bricht auf schmalen Bildschirmen um. */
 .abfrage-knoepfe {

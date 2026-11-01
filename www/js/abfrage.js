@@ -346,28 +346,60 @@ function rueckfrageAnzeigen(vokabel, abfrageFelder, fehlendeListe, bisherigerRoh
 
   container.appendChild(karte);
 
-  const weiterButton = document.createElement('button');
-  weiterButton.className = 'primaer';
-  weiterButton.textContent = 'Weiter';
-  weiterButton.addEventListener('click', () => (
-    antwortPruefen(vokabel, abfrageFelder, eingabe, weiterButton, container, bisherigerRohtext, fehlendeListe[0])
+  const knoepfe = antwortKnoepfe(container, eingabe, 'Weiter', () => (
+    antwortPruefen(vokabel, abfrageFelder, eingabe, knoepfe, container, bisherigerRohtext, fehlendeListe[0])
   ));
-  container.appendChild(weiterButton);
-  eingabe.waehrendAufnahmeGesperrt.push(weiterButton);
-
-  eingabe.addEventListener('keydown', ev => {
-    // preventDefault: sonst landet derselbe Tastendruck nach dem Prüfen
-    // beim dann fokussierten "Weiter" und überspringt das Ergebnis.
-    if (ev.key === 'Enter') {
-      ev.preventDefault();
-      weiterButton.click();
-    }
-  });
   eingabeFokussieren(eingabe);
 }
 
+// Primärer Knopf ("Prüfen" bzw. "Weiter" bei einer Rückfrage) und darunter
+// "Ich weiß es nicht". Der primäre Knopf ist gesperrt, solange das Feld leer
+// ist - ein versehentliches Tippen darauf ohne Antwort zählte sonst als
+// falsch. Wer die Antwort nicht weiß, sagt das mit dem zweiten Knopf
+// ausdrücklich (zählt wie eine leere Antwort: falsch, Lösung wird gezeigt).
+// Gibt die Knopfgruppe zurück; antwortPruefen() blendet sie nach dem Prüfen
+// aus.
+function antwortKnoepfe(container, eingabe, beschriftung, pruefen) {
+  const knoepfe = document.createElement('div');
+  knoepfe.className = 'antwort-knoepfe';
+
+  const pruefenButton = document.createElement('button');
+  pruefenButton.className = 'primaer';
+  pruefenButton.textContent = beschriftung;
+  pruefenButton.addEventListener('click', pruefen);
+
+  const weissNichtButton = document.createElement('button');
+  weissNichtButton.textContent = 'Ich weiß es nicht';
+  weissNichtButton.addEventListener('click', () => {
+    eingabe.value = '';
+    pruefen();
+  });
+
+  knoepfe.append(pruefenButton, weissNichtButton);
+  container.appendChild(knoepfe);
+  eingabe.waehrendAufnahmeGesperrt.push(pruefenButton, weissNichtButton);
+
+  // Auch nach der Spracheingabe: mitMikrofon() löst danach ein input-Event
+  // aus, nachdem es die gesperrten Knöpfe wieder freigegeben hat.
+  const sperreWennLeer = () => { pruefenButton.disabled = eingabe.value.trim() === ''; };
+  eingabe.addEventListener('input', sperreWennLeer);
+  sperreWennLeer();
+
+  eingabe.addEventListener('keydown', ev => {
+    // preventDefault: sonst landet derselbe Tastendruck nach dem Prüfen
+    // beim dann fokussierten "Weiter" und überspringt das Ergebnis. Bei
+    // leerem Feld tut Enter nichts (click() auf einen gesperrten Knopf
+    // wird ignoriert).
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      pruefenButton.click();
+    }
+  });
+  return knoepfe;
+}
+
 function antwortPruefen(
-  vokabel, abfrageFelder, eingabe, pruefenButton, container, bisherigerRohtext = '', beantworteterEintrag = null
+  vokabel, abfrageFelder, eingabe, knoepfe, container, bisherigerRohtext = '', beantworteterEintrag = null
 ) {
   const eigeneEingabe = eingabe.value.trim();
   const rohtext = kombiniereRohtext(beantworteterEintrag, bisherigerRohtext, eigeneEingabe);
@@ -377,7 +409,7 @@ function antwortPruefen(
 
   eingabe.disabled = true;
   if (eingabe.mikrofonKnopf) eingabe.mikrofonKnopf.disabled = true;
-  pruefenButton.hidden = true;
+  knoepfe.hidden = true;
 
   // Eine komplett leere Eingabe (weder jetzt noch beim ursprünglichen
   // Prüfen etwas eingetragen) löst keine weitere Rückfrage aus - sonst
@@ -533,21 +565,9 @@ function renderKarte() {
 
   container.appendChild(formular);
 
-  const pruefenButton = document.createElement('button');
-  pruefenButton.className = 'primaer';
-  pruefenButton.textContent = 'Prüfen';
-  pruefenButton.addEventListener('click', () => antwortPruefen(vokabel, abfrageFelder, eingabe, pruefenButton, container));
-  container.appendChild(pruefenButton);
-  eingabe.waehrendAufnahmeGesperrt.push(pruefenButton);
-
-  eingabe.addEventListener('keydown', ev => {
-    // preventDefault: sonst landet derselbe Tastendruck nach dem Prüfen
-    // beim dann fokussierten "Weiter" und überspringt das Ergebnis.
-    if (ev.key === 'Enter') {
-      ev.preventDefault();
-      pruefenButton.click();
-    }
-  });
+  const knoepfe = antwortKnoepfe(container, eingabe, 'Prüfen', () => (
+    antwortPruefen(vokabel, abfrageFelder, eingabe, knoepfe, container)
+  ));
   eingabeFokussieren(eingabe);
 }
 

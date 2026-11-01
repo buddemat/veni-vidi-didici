@@ -80,7 +80,6 @@ function mikrofonKnopfErstellen(input) {
       const ergebnis = await erkenneSprache(input.value);
       if (ergebnis !== null) {
         input.value = ergebnis;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
         eingabeFokussieren(input);
       }
     } catch (fehler) {
@@ -88,6 +87,9 @@ function mikrofonKnopfErstellen(input) {
       alert(`Spracheingabe hat nicht funktioniert: ${fehler?.message || fehler}`);
     } finally {
       gesperrt.forEach(knopf => { knopf.disabled = false; });
+      // Erst nach dem Freigeben, damit Aufrufer den Zustand ihrer Knöpfe
+      // neu bestimmen können (z.B. "Prüfen" bei leerem Feld gesperrt).
+      input.dispatchEvent(new Event('input', { bubbles: true }));
       button.disabled = false;
       button.classList.remove('nimmt-auf');
       button.textContent = '🎤';
