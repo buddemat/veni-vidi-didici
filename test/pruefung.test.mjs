@@ -513,3 +513,49 @@ test('tolerated typos are reported, normalisation differences are not', () => {
   assert.deepEqual(pruefeAntwort(fugere, felder, 'fugere, fugiō, fūgī, fliehen vor').tippfehler, []);
   assert.deepEqual(pruefeAntwort(fugere, felder, 'fugere, fugio, fugi, fliehen').tippfehler, []);
 });
+
+const cremare = {
+  wortart: 'verb',
+  lemma: 'cremāre',
+  formen: { praesens_1sg: 'cremō' },
+  bedeutungen: [{ text: 'verbrennen', typ: 'muss' }, { text: 'schweigen', typ: 'kann' }],
+};
+const contemplari = {
+  wortart: 'verb',
+  lemma: 'contemplārī',
+  formen: { praesens_1sg: 'contemplor', perfekt_1sg: 'contemplātus sum' },
+  bedeutungen: [{ text: 'betrachten', typ: 'muss' }],
+};
+const stare = {
+  wortart: 'verb',
+  lemma: 'stāre',
+  formen: {},
+  bedeutungen: [{ text: '(da)stehen', typ: 'muss' }],
+};
+const peritus = {
+  wortart: 'adjektiv',
+  lemma: 'perītus',
+  formen: {},
+  bedeutungen: [{ text: 'erfahren', typ: 'muss' }],
+};
+
+test('a doubled or missing double letter is tolerated from 7 letters on', () => {
+  assert.equal(pruefeAntwort(cremare, [], 'verbrennnen').richtig, true);
+  assert.equal(pruefeAntwort(cremare, [], 'verbrenen').richtig, true);
+  const mitKann = pruefeAntwort(cremare, [], 'verbrennen, schweiggen');
+  assert.equal(mitKann.richtig, true);
+  assert.deepEqual(mitKann.tippfehler, [{ getippt: 'schweiggen', soll: 'schweigen' }]);
+  assert.equal(pruefeAntwort(contemplari, ['perfekt_1sg'], 'conttemplatus sum, betrachten').richtig, true);
+});
+
+test('no other missing or extra letters, none in short words or Latin endings', () => {
+  assert.equal(pruefeAntwort(cremare, [], 'vebrennen').richtig, false);
+  assert.equal(pruefeAntwort(contemplari, ['perfekt_1sg'], 'contmplatus sum, betrachten').richtig, false);
+  assert.equal(pruefeAntwort(stare, [], 'sehen').richtig, false);
+  assert.equal(pruefeAntwort(stare, [], 'stehhen').richtig, false);
+  assert.equal(pruefeAntwort(peritus, [], 'erfahrene').richtig, false);
+  assert.equal(pruefeAntwort(cremare, [], 'verbrenne').richtig, false);
+  assert.equal(pruefeAntwort(contemplari, ['perfekt_1sg'], 'contemplatu sum, betrachten').richtig, false);
+  assert.equal(pruefeAntwort(contemplari, ['perfekt_1sg'], 'contemplatus suum, betrachten').richtig, false);
+  assert.equal(pruefeAntwort(contemplari, ['praesens_1sg'], 'contemplori, betrachten').richtig, false);
+});

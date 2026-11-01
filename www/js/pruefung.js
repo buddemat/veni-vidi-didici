@@ -57,20 +57,40 @@ export function levenshteinDistanz(a, b) {
 // Hilfsfunktion durchgereicht, das wären sonst sehr viele Signaturen.
 let tippfehlertoleranzAktiv = true;
 
-// Erlaubte Tippfehlertoleranz. Wichtig: bei gleicher Länge (reine
-// Buchstaben-Vertauschung, z.B. "vocare"/"vokare") ist ein Zeichen Abweichung
-// meist ein harmloser Tippfehler. Bei unterschiedlicher Länge (eingefügter
-// oder fehlender Buchstabe) gibt es dagegen KEINE Toleranz, auch nicht bei
-// langen Wörtern - gerade bei Endungen (z.B. 1. Person Singular) kann selbst
-// bei langem Stamm ein einzelner Buchstabe den grammatischen Unterschied
-// ausmachen, z.B. wäre "clamao" statt "clamo" sonst fälschlich als richtig
-// durchgegangen. Ist die Toleranz per Einstellung ausgeschaltet, wird immer
-// exakte Übereinstimmung verlangt (0) - Normalisierung (Makronen, Umlaute,
-// u/v, i/j, ?/!) gilt aber immer, das ist keine "Toleranz" im engeren Sinn,
-// sondern nötig, weil viele Tastaturen z.B. keine Makronen können.
+// Erlaubte Tippfehlertoleranz. Bei gleicher Länge (Buchstabe vertauscht,
+// z.B. "vocare"/"vokare") ist ein Zeichen Abweichung meist ein harmloser
+// Tippfehler - außer bei kurzen Wörtern (bis 4 Buchstaben): Die haben zu
+// viele echte Nachbarn (Hand/Hund, Rad/Rat, der/die). Ein Buchstabe mehr
+// oder weniger wird nur als verdoppelter bzw. fehlender Doppelbuchstabe
+// toleriert ("brennnen", "schweiggen"), und erst ab MIN_LAENGE_EINFUEGUNG
+// Buchstaben: Beliebige eingefügte/fehlende Buchstaben ergeben zu oft ein
+// anderes echtes Wort ("sehen"/"stehen", "schreien"/"schreiben",
+// "mittere"/"āmittere"). Bei lateinischen Werten müssen zusätzlich
+// die Endungen exakt stimmen (siehe lateinEndungenGleich), sonst ginge z.B.
+// "clamao" für "clamo" durch. Ist die Toleranz per Einstellung
+// ausgeschaltet, wird immer exakte Übereinstimmung verlangt (0) -
+// Normalisierung (Makronen, Umlaute, u/v, i/j, ?/!) gilt aber immer, das ist
+// keine "Toleranz" im engeren Sinn, sondern nötig, weil viele Tastaturen
+// z.B. keine Makronen können.
+const MIN_LAENGE_EINFUEGUNG = 7;
+
+// Ob das längere Wort genau einen Buchstaben mehr hat und dieser seinen
+// Nachbarn verdoppelt ("brennnen" zu "brennen", "schweiggen" zu "schweigen").
+function unterscheidenSichNurInDoppelbuchstabe(a, b) {
+  const [lang, kurz] = a.length > b.length ? [a, b] : [b, a];
+  if (lang.length !== kurz.length + 1) return false;
+  let i = 0;
+  while (i < kurz.length && lang[i] === kurz[i]) i++;
+  // lang[i] ist der überzählige Buchstabe - der Rest muss gleich sein.
+  return lang.slice(i + 1) === kurz.slice(i) && (lang[i] === lang[i - 1] || lang[i] === lang[i + 1]);
+}
+
 function toleranzSchwelle(a, b) {
   if (!tippfehlertoleranzAktiv) return 0;
-  if (a.length !== b.length) return 0;
+  if (a.length !== b.length) {
+    const langGenug = Math.min(a.length, b.length) >= MIN_LAENGE_EINFUEGUNG;
+    return langGenug && unterscheidenSichNurInDoppelbuchstabe(a, b) ? 1 : 0;
+  }
   const laenge = a.length;
   if (laenge <= 4) return 0;
   if (laenge <= 8) return 1;
@@ -387,15 +407,14 @@ function artikelUndRest(normalisierterText) {
 // ein "Tippfehler" dort ist meist eine falsche Form ("fugeo" statt "fugio",
 // "fugari" statt "fugavi", "amicarum" statt "amicorum"). Deshalb gilt die
 // Toleranz dort nur vor den letzten LATEIN_ENDUNG_LAENGE Buchstaben jedes
-// Worts: Wortzahl und Wortlängen müssen gleich sein, die Endungen exakt.
+// Worts: Die Wortzahl muss gleich sein, die Endungen exakt.
 const LATEIN_ENDUNG_LAENGE = 4;
 
 function lateinEndungenGleich(na, nb) {
   const worteA = na.split(' ');
   const worteB = nb.split(' ');
   if (worteA.length !== worteB.length) return false;
-  return worteA.every((wort, i) => wort.length === worteB[i].length
-    && wort.slice(-LATEIN_ENDUNG_LAENGE) === worteB[i].slice(-LATEIN_ENDUNG_LAENGE));
+  return worteA.every((wort, i) => wort.slice(-LATEIN_ENDUNG_LAENGE) === worteB[i].slice(-LATEIN_ENDUNG_LAENGE));
 }
 
 // Kleinste Distanz einer Angabe zu irgendeiner akzeptierten Variante eines
