@@ -400,10 +400,17 @@ input[type="text"]:focus, select:focus {
   flex-shrink: 0;
 }
 
-.mikrofon-knopf.nimmt-auf {
+.mikrofon-knopf.nimmt-auf, .audio-knoepfe .nimmt-auf {
   background: var(--farbe-falsch);
   color: #ffffff;
   animation: mikrofon-pulsieren 1s ease-in-out infinite;
+}
+
+/* Aussprache-Karte im Editor. */
+.audio-knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 @keyframes mikrofon-pulsieren {

@@ -6,6 +6,10 @@ import { zeigeScreen } from './screens.js';
 import { feldDefinitionenFuer } from './einstellungen.js';
 import { mitMikrofon } from './spracheingabe.js';
 import { initExportKnopf, initImportKnopf } from './datenaustausch.js';
+import {
+  quelleFuer, hatMitgelieferteAudio, spieleAudio, spieleBlob, stoppeAudio,
+  eigeneAufnahmeSpeichern, eigeneAufnahmeLoeschen, eigeneAufnahmeLaden,
+} from './audio.js';
 
 const WORTART_OPTIONEN = [
   { value: 'substantiv', label: 'Substantiv' },
@@ -232,7 +236,158 @@ function formFelderNeuAufbauen(containerEl, wortart, formenWerte) {
   return eingaben;
 }
 
+// --- Aussprache ---
+
+// Längere Aufnahmen sind fast sicher versehentlich (Stopp vergessen).
+const MAX_AUFNAHME_MS = 10000;
+
+// Laufende Aufnahme (auch über ein neues Rendern des Editors hinweg, damit
+// das Mikrofon nicht weiterläuft, wenn man den Editor verlässt).
+let laufendeAufnahme = null;
+
+function aufnahmeAbbrechen() {
+  if (!laufendeAufnahme) return;
+  laufendeAufnahme.abgebrochen = true;
+  laufendeAufnahme.recorder.stop();
+}
+
+// Bevorzugtes Aufnahmeformat; Android-WebView und Chrome können WebM/Opus,
+// Safari nur MP4.
+function aufnahmeFormat() {
+  if (typeof MediaRecorder === 'undefined') return null;
+  return ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+}
+
+async function starteAufnahme(fertig) {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const format = aufnahmeFormat();
+  const recorder = new MediaRecorder(stream, format ? { mimeType: format } : {});
+  const teile = [];
+  const aufnahme = { recorder, abgebrochen: false };
+  const zeitlimit = setTimeout(() => recorder.state !== 'inactive' && recorder.stop(), MAX_AUFNAHME_MS);
+  recorder.addEventListener('dataavailable', e => { if (e.data.size) teile.push(e.data); });
+  recorder.addEventListener('stop', () => {
+    clearTimeout(zeitlimit);
+    stream.getTracks().forEach(t => t.stop());
+    if (laufendeAufnahme === aufnahme) laufendeAufnahme = null;
+    fertig(aufnahme.abgebrochen ? null : new Blob(teile, { type: recorder.mimeType || format || 'audio/webm' }));
+  });
+  recorder.start();
+  laufendeAufnahme = aufnahme;
+}
+
+// Karte "Aussprache (Latein)": anhören, aufnehmen, Datei wählen, eigene
+// Aufnahme löschen. Änderungen gelten erst beim Speichern der Vokabel; die
+// zurückgegebene Funktion übernimmt sie dann (mit dem gespeicherten Lemma).
+function ausspracheKarte(containerEl, vokabel) {
+  // undefined = unverändert, Blob = neue Aufnahme, null = eigene löschen
+  let neu;
+  const quelle = vokabel ? quelleFuer(vokabel) : null;
+
+  const karte = document.createElement('div');
+  karte.className = 'karte';
+  const titel = document.createElement('h3');
+  titel.textContent = 'Aussprache (Latein)';
+  const status = document.createElement('p');
+  status.className = 'hinweis';
+  const knoepfe = document.createElement('div');
+  knoepfe.className = 'audio-knoepfe';
+
+  const anhoeren = document.createElement('button');
+  anhoeren.type = 'button';
+  anhoeren.textContent = '▶ Anhören';
+  const aufnehmen = document.createElement('button');
+  aufnehmen.type = 'button';
+  const dateiWaehlen = document.createElement('button');
+  dateiWaehlen.type = 'button';
+  dateiWaehlen.textContent = 'Datei wählen';
+  const dateiInput = document.createElement('input');
+  dateiInput.type = 'file';
+  dateiInput.accept = 'audio/*';
+  dateiInput.hidden = true;
+  const loeschen = document.createElement('button');
+  loeschen.type = 'button';
+  loeschen.textContent = 'Eigene löschen';
+
+  function aktualisieren() {
+    const nimmtAuf = !!laufendeAufnahme;
+    const eigeneBleibt = neu === undefined && quelle === 'eigen';
+    const ausApp = hatMitgelieferteAudio(vokabel);
+    if (nimmtAuf) status.textContent = 'Aufnahme läuft … (höchstens 10 Sekunden)';
+    else if (neu) status.textContent = 'Neue Aufnahme - wird beim Speichern übernommen.';
+    else if (neu === null) {
+      status.textContent = 'Eigene Aufnahme wird beim Speichern gelöscht.'
+        + (ausApp ? ' Danach gilt wieder die Aufnahme aus der App.' : '');
+    } else if (eigeneBleibt) status.textContent = 'Eigene Aufnahme vorhanden.';
+    else if (quelle === 'mitgeliefert') status.textContent = 'Aufnahme aus der App vorhanden.';
+    else status.textContent = 'Keine Aufnahme vorhanden.';
+    anhoeren.disabled = nimmtAuf || !(neu || (neu === undefined && quelle));
+    aufnehmen.textContent = nimmtAuf ? '⏹ Stopp' : '⏺ Aufnehmen';
+    aufnehmen.classList.toggle('nimmt-auf', nimmtAuf);
+    dateiWaehlen.disabled = nimmtAuf;
+    loeschen.hidden = !(neu || eigeneBleibt);
+  }
+
+  anhoeren.addEventListener('click', () => {
+    if (neu) spieleBlob(neu);
+    else spieleAudio(vokabel);
+  });
+  aufnehmen.addEventListener('click', async () => {
+    if (laufendeAufnahme) {
+      laufendeAufnahme.recorder.stop();
+      return;
+    }
+    stoppeAudio();
+    try {
+      await starteAufnahme(blob => {
+        if (blob && blob.size) neu = blob;
+        aktualisieren();
+      });
+    } catch (fehler) {
+      console.error('Aufnahme fehlgeschlagen:', fehler);
+      alert(`Aufnahme hat nicht funktioniert: ${fehler?.message || fehler}`);
+    }
+    aktualisieren();
+  });
+  dateiWaehlen.addEventListener('click', () => dateiInput.click());
+  dateiInput.addEventListener('change', () => {
+    const datei = dateiInput.files[0];
+    dateiInput.value = '';
+    if (!datei) return;
+    if (!datei.type.startsWith('audio/')) {
+      alert(`"${datei.name}" ist keine Audiodatei.`);
+      return;
+    }
+    neu = datei;
+    aktualisieren();
+  });
+  loeschen.addEventListener('click', () => {
+    stoppeAudio();
+    neu = quelle === 'eigen' ? null : undefined;
+    aktualisieren();
+  });
+
+  knoepfe.append(anhoeren, aufnehmen, dateiWaehlen, loeschen);
+  karte.append(titel, status, knoepfe, dateiInput);
+  containerEl.appendChild(karte);
+  aktualisieren();
+
+  // Eine eigene Aufnahme folgt einer Lemma-Korrektur im Editor (sonst
+  // bliebe sie wegen der Lemma-Prüfung stumm); passt sie nicht mehr zum
+  // geänderten Wort, lässt sie sich hier löschen oder neu aufnehmen.
+  return async (id, lemma) => {
+    if (neu) await eigeneAufnahmeSpeichern(id, lemma, neu);
+    else if (neu === null) await eigeneAufnahmeLoeschen(id);
+    else if (quelle === 'eigen' && lemma !== vokabel.lemma) {
+      const eintrag = await eigeneAufnahmeLaden(id);
+      if (eintrag) await eigeneAufnahmeSpeichern(id, lemma, eintrag.blob);
+    }
+  };
+}
+
 export function renderEditor() {
+  aufnahmeAbbrechen();
+  stoppeAudio();
   const vokabel = bearbeiteId ? getStore().vokabeln[bearbeiteId] : null;
   const container = document.getElementById('editor-inhalt');
   container.innerHTML = '';
@@ -353,11 +508,13 @@ export function renderEditor() {
   hinweisKarte.append(herkunftLabel, herkunftInput);
   container.appendChild(hinweisKarte);
 
+  const ausspracheUebernehmen = ausspracheKarte(container, vokabel);
+
   // --- Speichern ---
   const speichernButton = document.createElement('button');
   speichernButton.className = 'primaer';
   speichernButton.textContent = 'Speichern';
-  speichernButton.addEventListener('click', () => {
+  speichernButton.addEventListener('click', async () => {
     const lektionNr = Number(lektionInput.value);
     const lemma = lemmaInput.value.trim();
     const mussBedeutungen = getMussBedeutungen();
@@ -424,6 +581,15 @@ export function renderEditor() {
 
     console.log(`Vokabel gespeichert: ${id}`, neueVokabel);
 
+    aufnahmeAbbrechen();
+    stoppeAudio();
+    try {
+      await ausspracheUebernehmen(id, lemma);
+    } catch (fehler) {
+      console.error('Aufnahme speichern fehlgeschlagen:', fehler);
+      alert(`Die Vokabel ist gespeichert, die Aufnahme aber nicht: ${fehler?.message || fehler}`);
+    }
+
     renderVokabelliste();
     zeigeScreen('vokabelliste');
   });
@@ -443,6 +609,13 @@ export function renderEditor() {
 }
 
 export function initEditor() {
+  // Editor verlassen (z.B. Zurück-Pfeil): Mikrofon und Wiedergabe beenden.
+  document.addEventListener('screen-gezeigt', e => {
+    if (e.detail.id !== 'editor') {
+      aufnahmeAbbrechen();
+      stoppeAudio();
+    }
+  });
   document.getElementById('einstellungen-vokabelliste-button').addEventListener('click', () => {
     renderVokabelliste();
     zeigeScreen('vokabelliste');

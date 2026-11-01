@@ -125,6 +125,11 @@ export function quelleFuer(vokabel) {
   return audioQuelle(vokabel, eigene, mitgeliefert);
 }
 
+// Gibt es eine mitgelieferte Aufnahme (unabhängig von einer eigenen)?
+export function hatMitgelieferteAudio(vokabel) {
+  return !!vokabel && lemmaPasst(mitgeliefert[vokabel.id]?.lemma, vokabel.lemma);
+}
+
 export function hatAudio(vokabel) {
   return quelleFuer(vokabel) !== null;
 }
@@ -141,15 +146,9 @@ async function audioUrl(vokabel) {
   return null;
 }
 
-// Spielt das Lemma ab; eine laufende Wiedergabe wird vorher beendet.
-// Gibt false zurück, wenn es nichts abzuspielen gibt oder der Browser die
-// Wiedergabe verweigert (z.B. Autoplay ohne vorheriges Antippen).
-export async function spieleAudio(vokabel) {
-  stoppeAudio();
-  const quelle = await audioUrl(vokabel);
-  if (!quelle) return false;
-  player = new Audio(quelle.url);
-  if (quelle.eigen) playerUrl = quelle.url;
+async function abspielen(url, objektUrl) {
+  player = new Audio(url);
+  if (objektUrl) playerUrl = url;
   try {
     await player.play();
     return true;
@@ -157,6 +156,22 @@ export async function spieleAudio(vokabel) {
     console.warn('Audio-Wiedergabe nicht möglich:', e);
     return false;
   }
+}
+
+// Spielt das Lemma ab; eine laufende Wiedergabe wird vorher beendet.
+// Gibt false zurück, wenn es nichts abzuspielen gibt oder der Browser die
+// Wiedergabe verweigert (z.B. Autoplay ohne vorheriges Antippen).
+export async function spieleAudio(vokabel) {
+  stoppeAudio();
+  const quelle = await audioUrl(vokabel);
+  if (!quelle) return false;
+  return abspielen(quelle.url, quelle.eigen);
+}
+
+// Spielt eine noch nicht gespeicherte Aufnahme ab (Editor).
+export async function spieleBlob(blob) {
+  stoppeAudio();
+  return abspielen(URL.createObjectURL(blob), true);
 }
 
 export function stoppeAudio() {
