@@ -1,5 +1,6 @@
 import { initNavigation } from './screens.js';
 import { initStore, getStore } from './store.js';
+import { initAudio } from './audio.js';
 import { renderEinstellungen } from './einstellungen.js';
 import { renderLektionsauswahl, initLektionsauswahl } from './lektionsauswahl.js';
 import { initAbfrage } from './abfrage.js';
@@ -28,6 +29,7 @@ async function ladeSeed() {
 async function starteApp() {
   const { seedJson, istBeispiel } = await ladeSeed();
   const store = initStore(seedJson, { wortschatzAbgleichen: !istBeispiel });
+  await initAudio(istBeispiel);
 
   const anzahlVokabeln = Object.keys(store.vokabeln).length;
   const anzahlLektionen = new Set(

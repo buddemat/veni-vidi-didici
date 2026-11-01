@@ -3,6 +3,8 @@
 daten/
 # Actual vocabulary (the repository ships vokabeln.beispiel.json instead)
 www/assets/vokabeln.json
+# Pronunciation audio for the actual vocabulary (in the APK only)
+www/assets/audio/
 # Screenshots containing vocabulary
 bugs/
 # APKs bundle the actual vocabulary
