@@ -156,7 +156,8 @@ test('wichtigeVokabelIds and beschreibeAuswahl follow the Inselwortschatz choice
   const profil = { aktuelleLektion: 2 };
   assert.deepEqual(wichtigeVokabelIds(mitInsel, {}, profil), ['L01-001']);
   assert.deepEqual(wichtigeVokabelIds(mitInsel, {}, profil, 'mit'), ['L01-001', 'L01-003']);
-  assert.deepEqual(wichtigeVokabelIds(mitInsel, {}, profil, 'nur'), ['L01-003']);
+  // last round "only Inselwortschatz": still all important words, as with 'mit'
+  assert.deepEqual(wichtigeVokabelIds(mitInsel, {}, profil, 'nur'), ['L01-001', 'L01-003']);
   assert.equal(beschreibeAuswahl(lektionsGruppen, { lektionen: [2], inselwortschatz: 'mit' }), 'L2 + Inselwortschatz');
   assert.equal(beschreibeAuswahl(lektionsGruppen, { lektionen: [1, 2], inselwortschatz: 'nur' }), 'L1–2, nur Inselwortschatz');
   assert.equal(beschreibeAuswahl(lektionsGruppen, { lektionen: [2] }), 'L2');

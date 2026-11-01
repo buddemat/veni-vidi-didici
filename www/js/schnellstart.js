@@ -111,15 +111,17 @@ export function neuesteLektionAuswahl(vokabeln, fortschritt, profil) {
 // Für "Wichtigste Wörter": alle als `wichtig` markierten Vokabeln von
 // Lektion 1 bis zur aktuellen Lektion (wie bei "Neueste Lektion", ggf. nur
 // bis zu deren eingestelltem Wort), in Lernreihenfolge; Inselwortschatz je
-// nach `inselwortschatz` ('ohne'/'mit'/'nur', wie bei bauePool). null, wenn
-// sich keine aktuelle Lektion bestimmen lässt.
+// nach `inselwortschatz` ('ohne'/'mit', wie bei bauePool). 'nur' zählt hier
+// wie 'mit': Wer zuletzt nur Inselwortschatz geübt hat, soll trotzdem alle
+// wichtigen Wörter bekommen, nicht nur (meist keine) wichtigen Inselwörter.
+// null, wenn sich keine aktuelle Lektion bestimmen lässt.
 export function wichtigeVokabelIds(vokabeln, fortschritt, profil, inselwortschatz = 'ohne') {
   const neueste = neuesteLektionAuswahl(vokabeln, fortschritt, profil);
   if (!neueste) return null;
   const gruppen = gruppiereNachLektion(vokabeln);
   const bisLektion = neueste.lektionen[0];
   const lektionen = Object.keys(gruppen).map(Number).filter(nr => nr <= bisLektion);
-  const auswahl = { lektionen, bisId: neueste.bisId, inselwortschatz };
+  const auswahl = { lektionen, bisId: neueste.bisId, inselwortschatz: inselwortschatz === 'nur' ? 'mit' : inselwortschatz };
   return bauePool(gruppen, auswahl, gruppiereInselNachLektion(vokabeln)).filter(id => vokabeln[id].wichtig);
 }
 
