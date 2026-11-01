@@ -3,9 +3,11 @@
 A Latin vocabulary trainer for Android (Capacitor) and the browser, written in
 plain HTML/CSS/JavaScript without a framework. The user interface is in German.
 
-<p>
+<p align="center">
   <img src="screenshots/main.png" alt="Start screen with quick starts" width="240">
+  &nbsp;&nbsp;&nbsp;
   <img src="screenshots/quiz.png" alt="Quiz: correct answer for esse" width="240">
+  &nbsp;&nbsp;&nbsp;
   <img src="screenshots/follow-up.png" alt="Follow-up question for the missing gender of asinus" width="240">
 </p>
 
