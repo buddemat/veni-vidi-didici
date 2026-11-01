@@ -81,25 +81,36 @@ function lektionBeschriftung(nr) {
 }
 
 // Die Wörter, bis zu denen man wählen kann, passend zur Inselwortschatz-
-// Auswahl: nur die Lektion, Lektion und danach ihr Inselwortschatz
-// (durchnummeriert, mit "(Insel)" markiert) oder nur der Inselwortschatz.
+// Auswahl: nur die Lektion, Lektion und danach ihr Inselwortschatz (als
+// zwei Gruppen mit nicht wählbarer Überschrift, "Lektion 6" und
+// "Inselwortschatz", jede ab 1 nummeriert - wie in beschreibeAuswahl) oder
+// nur der Inselwortschatz.
 // Die bisherige Auswahl bleibt erhalten, wenn es das Wort weiter gibt.
 function bisOptionenBefuellen(select, lektionNr, inselwortschatz) {
   const vorher = select.value;
   select.innerHTML = '';
   const liste = inselwortschatz === 'nur' ? [] : gruppenNachLektion[lektionNr] || [];
   const insel = inselwortschatz === 'ohne' ? [] : inselNachLektion[lektionNr] || [];
-  const eintraege = [
-    ...liste.map(vokabel => ({ vokabel, zusatz: '' })),
-    ...insel.map(vokabel => ({ vokabel, zusatz: inselwortschatz === 'mit' ? ' (Insel)' : '' })),
-  ];
-  eintraege.forEach(({ vokabel, zusatz }, index) => {
-    const option = document.createElement('option');
-    option.value = vokabel.id;
-    option.textContent = `${index + 1}. ${vokabel.lemma}${zusatz}`;
-    select.appendChild(option);
-  });
-  if (eintraege.some(e => e.vokabel.id === vorher)) select.value = vorher;
+  const option = (vokabel, index) => {
+    const element = document.createElement('option');
+    element.value = vokabel.id;
+    element.textContent = `${index + 1}. ${vokabel.lemma}`;
+    return element;
+  };
+  // Gruppen nur, wenn beides vorkommt; sonst eine einfache Liste.
+  const gruppieren = liste.length > 0 && insel.length > 0;
+  const fuegeHinzu = (vokabeln, ueberschrift) => {
+    let ziel = select;
+    if (gruppieren) {
+      ziel = document.createElement('optgroup');
+      ziel.label = ueberschrift;
+      select.appendChild(ziel);
+    }
+    vokabeln.forEach((vokabel, index) => ziel.appendChild(option(vokabel, index)));
+  };
+  fuegeHinzu(liste, `Lektion ${lektionNr}`);
+  fuegeHinzu(insel, 'Inselwortschatz');
+  if ([...liste, ...insel].some(v => v.id === vorher)) select.value = vorher;
 }
 
 export function renderLektionsauswahl() {
