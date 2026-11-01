@@ -474,3 +474,29 @@ test('article follow-up works when the gender is attached to the meaning', () =>
     }
   }
 });
+
+const fugere = {
+  wortart: 'verb',
+  lemma: 'fugere',
+  formen: { praesens_1sg: 'fugiō (m. Akk.)', perfekt_1sg: 'fūgī' },
+  bedeutungen: [{ text: 'fliehen (vor)', typ: 'muss' }],
+};
+const amicus = {
+  wortart: 'substantiv',
+  lemma: 'amīcus',
+  formen: { genitiv_sg: 'amīcī', genus: 'm', genitiv_pl: 'amīcōrum' },
+  bedeutungen: [{ text: 'der Freund', typ: 'muss' }],
+};
+
+test('no typo tolerance in the ending of Latin forms (fugeo is not fugio)', () => {
+  assert.equal(pruefeAntwort(fugere, ['praesens_1sg', 'perfekt_1sg'], 'fugere, fugio, fugi, fliehen').richtig, true);
+  assert.equal(pruefeAntwort(fugere, ['praesens_1sg', 'perfekt_1sg'], 'fugere, fugeo, fugi, fliehen').richtig, false);
+  assert.equal(pruefeAntwort(amicus, ['genitiv_pl'], 'amicus, amicarum, der Freund').richtig, false);
+  // The lemma is Latin as well: "fugare" is a different verb.
+  assert.equal(pruefeAntwort(fugere, ['praesens_1sg', 'perfekt_1sg'], 'fugare, fugio, fugi, fliehen').richtig, false);
+});
+
+test('typos in the stem of Latin forms and in German meanings are still tolerated', () => {
+  assert.equal(pruefeAntwort(amicus, ['genitiv_pl'], 'amicus, anicorum, der Freund').richtig, true);
+  assert.equal(pruefeAntwort(fugere, ['praesens_1sg', 'perfekt_1sg'], 'fugere, fugio, fugi, fliehan').richtig, true);
+});

@@ -383,9 +383,25 @@ function artikelUndRest(normalisierterText) {
   return { artikel: erstesWort, rest: normalisierterText.slice(leerzeichenIndex + 1) };
 }
 
+// Bei lateinischen Werten (Lemma, Formen) trägt die Endung die Grammatik -
+// ein "Tippfehler" dort ist meist eine falsche Form ("fugeo" statt "fugio",
+// "fugari" statt "fugavi", "amicarum" statt "amicorum"). Deshalb gilt die
+// Toleranz dort nur vor den letzten LATEIN_ENDUNG_LAENGE Buchstaben jedes
+// Worts: Wortzahl und Wortlängen müssen gleich sein, die Endungen exakt.
+const LATEIN_ENDUNG_LAENGE = 4;
+
+function lateinEndungenGleich(na, nb) {
+  const worteA = na.split(' ');
+  const worteB = nb.split(' ');
+  if (worteA.length !== worteB.length) return false;
+  return worteA.every((wort, i) => wort.length === worteB[i].length
+    && wort.slice(-LATEIN_ENDUNG_LAENGE) === worteB[i].slice(-LATEIN_ENDUNG_LAENGE));
+}
+
 // Kleinste Distanz einer Angabe zu irgendeiner akzeptierten Variante eines
 // Soll-Werts - oder null, wenn keine Variante innerhalb der Toleranz liegt.
-function besteVarianzDistanz(sollVarianten, segment) {
+// latein: Soll-Wert ist lateinisch, Endungen müssen exakt stimmen (s.o.).
+function besteVarianzDistanz(sollVarianten, segment, latein = false) {
   const nb = normalisiere(segment);
   let beste = null;
   for (const soll of sollVarianten) {
@@ -409,6 +425,7 @@ function besteVarianzDistanz(sollVarianten, segment) {
 
     const distanz = levenshteinDistanz(na, nb);
     const schwelle = toleranzSchwelle(na, nb);
+    if (distanz > 0 && latein && !lateinEndungenGleich(na, nb)) continue;
     if (distanz <= schwelle && (beste === null || distanz < beste)) beste = distanz;
   }
   return beste;
@@ -422,7 +439,7 @@ function ordneZu(erwarteteWerte, segmente) {
   const kandidaten = [];
   erwarteteWerte.forEach((erwartet, ei) => {
     segmente.forEach((segment, si) => {
-      const distanz = besteVarianzDistanz(erwartet.sollVarianten, segment);
+      const distanz = besteVarianzDistanz(erwartet.sollVarianten, segment, erwartet.latein);
       if (distanz !== null) kandidaten.push({ ei, si, distanz });
     });
   });
@@ -451,7 +468,7 @@ function ordneZu(erwarteteWerte, segmente) {
 // Varianten derselben erwarteten Bedeutung) und einer echten Falschangabe
 // (z.B. bei "sōl" zusätzlich "der Mond" - passt zu gar nichts Erwartetem).
 function segmentPasstIrgendwo(segment, erwarteteWerte) {
-  return erwarteteWerte.some(e => besteVarianzDistanz(e.sollVarianten, segment) !== null);
+  return erwarteteWerte.some(e => besteVarianzDistanz(e.sollVarianten, segment, e.latein) !== null);
 }
 
 // Ob ein Segment zu einer erwarteten Bedeutung passen WÜRDE, wenn ein
@@ -537,8 +554,8 @@ function versucheArtikelAufteilung(segment, erwarteteWerte, genusAktiv) {
 // pro Startposition gewinnt das längste passende Stück.
 function fasseKommaWerteZusammen(segmente, erwarteteWerte) {
   const kommaVarianten = erwarteteWerte
-    .map(e => e.sollVarianten.filter(v => /,|\.{2,}|…/.test(v)))
-    .filter(varianten => varianten.length > 0);
+    .map(e => ({ varianten: e.sollVarianten.filter(v => /,|\.{2,}|…/.test(v)), latein: e.latein }))
+    .filter(e => e.varianten.length > 0);
   if (kommaVarianten.length === 0) return segmente;
 
   const ergebnis = [];
@@ -547,7 +564,7 @@ function fasseKommaWerteZusammen(segmente, erwarteteWerte) {
     let ende = i + 1;
     for (let j = segmente.length; j > i + 1; j--) {
       const zusammen = segmente.slice(i, j).join(', ');
-      if (kommaVarianten.some(varianten => besteVarianzDistanz(varianten, zusammen) !== null)) {
+      if (kommaVarianten.some(e => besteVarianzDistanz(e.varianten, zusammen, e.latein) !== null)) {
         ende = j;
         break;
       }
@@ -594,13 +611,13 @@ export function pruefeAntwort(vokabel, abfrageFelder, rohtext, tippfehlerErlaubt
     .filter(feldKey => feldKey !== 'genus' && !formFelder.includes(feldKey));
 
   const erwarteteWerte = [
-    { typ: 'lemma', sollVarianten: sollVarianten(vokabel.lemma) },
+    { typ: 'lemma', latein: true, sollVarianten: sollVarianten(vokabel.lemma) },
     ...formFelder
-      .map(feldKey => ({ typ: 'form', feldKey, sollWert: vokabel.formen[feldKey] }))
+      .map(feldKey => ({ typ: 'form', latein: true, feldKey, sollWert: vokabel.formen[feldKey] }))
       .filter(e => e.sollWert !== undefined)
       .map(e => ({ ...e, sollVarianten: sollVarianten(e.sollWert) })),
     ...inaktiveFormFelder.map(feldKey => ({
-      typ: 'form-optional', feldKey, sollVarianten: sollVarianten(vokabel.formen[feldKey]),
+      typ: 'form-optional', latein: true, feldKey, sollVarianten: sollVarianten(vokabel.formen[feldKey]),
     })),
     ...mussBedeutungen.map((b, index) => ({
       typ: 'bedeutung', index, sollVarianten: sollVarianten(b.text, istVerb),
