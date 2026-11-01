@@ -70,13 +70,20 @@ export function bauePool(gruppen, { lektionen, bisId = null, inselwortschatz = '
 
 // Mindestens einmal falsch beantwortet und Level <= SCHWACH_BIS_LEVEL.
 // Nie abgefragte und bisher immer richtig beantwortete Vokabeln zählen
-// nicht als schwach.
-export function schwacheVokabelIds(vokabeln, fortschritt) {
+// nicht als schwach. Mit `profil` nur bis zur aktuellen Lektion (wie bei
+// "Wichtigste Wörter", Inselwortschatz eingeschlossen): Wer die aktuelle
+// Lektion im Profil zurückstellt, bekommt keine schwachen Wörter aus
+// späteren Lektionen. Ohne eingestellte Lektion gilt die zuletzt geübte -
+// das schließt alle schwachen Wörter ein, da sie schon geübt wurden.
+export function schwacheVokabelIds(vokabeln, fortschritt, profil = null) {
+  const bisAktuelle = profil ? vokabelIdsBisAktuelleLektion(vokabeln, fortschritt, profil, 'mit') : null;
+  const erlaubt = bisAktuelle && new Set(bisAktuelle);
   return Object.keys(vokabeln)
     .filter(id => {
       const eintrag = fortschritt[id];
       return eintrag && eintrag.zuletzt > 0 && eintrag.fehler > 0 && eintrag.level <= SCHWACH_BIS_LEVEL;
     })
+    .filter(id => !erlaubt || erlaubt.has(id))
     .sort();
 }
 
@@ -116,13 +123,23 @@ export function neuesteLektionAuswahl(vokabeln, fortschritt, profil) {
 // wichtigen Wörter bekommen, nicht nur (meist keine) wichtigen Inselwörter.
 // null, wenn sich keine aktuelle Lektion bestimmen lässt.
 export function wichtigeVokabelIds(vokabeln, fortschritt, profil, inselwortschatz = 'ohne') {
+  const ids = vokabelIdsBisAktuelleLektion(
+    vokabeln, fortschritt, profil, inselwortschatz === 'nur' ? 'mit' : inselwortschatz
+  );
+  return ids && ids.filter(id => vokabeln[id].wichtig);
+}
+
+// Alle Vokabeln von Lektion 1 bis zur aktuellen Lektion (siehe
+// neuesteLektionAuswahl, ggf. nur bis zu deren eingestelltem Wort), in
+// Lernreihenfolge; Inselwortschatz 'ohne'/'mit'. null, wenn sich keine
+// aktuelle Lektion bestimmen lässt.
+function vokabelIdsBisAktuelleLektion(vokabeln, fortschritt, profil, inselwortschatz) {
   const neueste = neuesteLektionAuswahl(vokabeln, fortschritt, profil);
   if (!neueste) return null;
   const gruppen = gruppiereNachLektion(vokabeln);
   const bisLektion = neueste.lektionen[0];
   const lektionen = Object.keys(gruppen).map(Number).filter(nr => nr <= bisLektion);
-  const auswahl = { lektionen, bisId: neueste.bisId, inselwortschatz: inselwortschatz === 'nur' ? 'mit' : inselwortschatz };
-  return bauePool(gruppen, auswahl, gruppiereInselNachLektion(vokabeln)).filter(id => vokabeln[id].wichtig);
+  return bauePool(gruppen, { lektionen, bisId: neueste.bisId, inselwortschatz }, gruppiereInselNachLektion(vokabeln));
 }
 
 // Kurzbeschreibung einer Auswahl für die Schnellstart-Knöpfe, z.B. "L23",

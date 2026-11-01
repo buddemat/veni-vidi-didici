@@ -55,6 +55,24 @@ test('schwacheVokabelIds: wrong at least once and level 1 or 2', () => {
   assert.deepEqual(schwacheVokabelIds(vokabeln, {}), []);
 });
 
+// With a profile: only up to the current lesson (set lesser than the
+// highest practised one, e.g. after stepping back), Inselwortschatz included.
+test('schwacheVokabelIds: limited to the current lesson from the profile', () => {
+  const fortschritt = {
+    'L01-001': geuebt(1, 1),
+    'L01-004': geuebt(1, 1), // Inselwortschatz in L1
+    'L02-002': geuebt(1, 1),
+    'L05-001': geuebt(1, 1),
+  };
+  const alle = ['L01-001', 'L01-004', 'L02-002', 'L05-001'];
+  assert.deepEqual(schwacheVokabelIds(vokabeln, fortschritt), alle);
+  assert.deepEqual(schwacheVokabelIds(vokabeln, fortschritt, { aktuelleLektion: 2 }), ['L01-001', 'L01-004', 'L02-002']);
+  assert.deepEqual(schwacheVokabelIds(vokabeln, fortschritt, { aktuelleLektion: 2, aktuelleBisId: 'L02-001' }),
+    ['L01-001', 'L01-004']);
+  // no current lesson set: up to the highest practised one, i.e. all
+  assert.deepEqual(schwacheVokabelIds(vokabeln, fortschritt, {}), alle);
+});
+
 test('schwacheVokabelIds: right the first time is not weak', () => {
   // new word (level 1) right once -> level 2, but never a mistake
   assert.deepEqual(schwacheVokabelIds(vokabeln, { 'L01-001': geuebt(2, 0) }), []);

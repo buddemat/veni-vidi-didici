@@ -53,9 +53,9 @@ export function renderSchnellstart() {
 
   // Bei schwachen Vokabeln geht es ums Festigen - die Runde endet erst,
   // wenn jede einmal richtig war.
-  const schwache = schwacheVokabelIds(store.vokabeln, store.fortschritt);
+  const schwache = schwacheVokabelIds(store.vokabeln, store.fortschritt, store.profil);
   const alleSchwachen = knopf(`Alle schwachen (${schwache.length})`, () => {
-    starteRunde(schwacheVokabelIds(store.vokabeln, store.fortschritt), abfrageModus, 'alle-richtig');
+    starteRunde(schwacheVokabelIds(store.vokabeln, store.fortschritt, store.profil), abfrageModus, 'alle-richtig');
   }, schwache.length === 0);
 
   // Wichtigste Wörter bis zur aktuellen Lektion - wie "Alle schwachen" zum
