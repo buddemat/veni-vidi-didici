@@ -139,6 +139,16 @@ function loesungsElement(vokabel, abfrageFelder, ergebnis) {
 
   container.appendChild(p);
 
+  // Toleriert, aber trotzdem zeigen, damit man sich die richtige
+  // Schreibweise merkt - direkt unter der Lösung, auch bei "Richtig!".
+  if (ergebnis.tippfehler?.length > 0) {
+    const tippfehler = document.createElement('p');
+    tippfehler.className = 'hinweis';
+    tippfehler.textContent =
+      `Tippfehler: ${ergebnis.tippfehler.map(t => `${t.getippt} → ${t.soll}`).join(', ')}`;
+    container.appendChild(tippfehler);
+  }
+
   // Lern-Hinweis zur Vokabel (z.B. "Deponens", "Dat. nēminī") erst mit der
   // Lösung zeigen - vorher würde er womöglich etwas verraten.
   if (vokabel.hinweis) {

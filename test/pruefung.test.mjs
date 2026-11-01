@@ -500,3 +500,16 @@ test('typos in the stem of Latin forms and in German meanings are still tolerate
   assert.equal(pruefeAntwort(amicus, ['genitiv_pl'], 'amicus, anicorum, der Freund').richtig, true);
   assert.equal(pruefeAntwort(fugere, ['praesens_1sg', 'perfekt_1sg'], 'fugere, fugio, fugi, fliehan').richtig, true);
 });
+
+test('tolerated typos are reported, normalisation differences are not', () => {
+  const felder = ['praesens_1sg', 'perfekt_1sg'];
+  assert.deepEqual(pruefeAntwort(fugere, felder, 'fugere, fugio, fugi, fliehan').tippfehler,
+    [{ getippt: 'fliehan', soll: 'fliehen' }]);
+  assert.deepEqual(pruefeAntwort(amicus, ['genitiv_pl'], 'anicus, anicorum, der Freumd').tippfehler, [
+    { getippt: 'anicus', soll: 'amīcus' },
+    { getippt: 'anicorum', soll: 'amīcōrum' },
+    { getippt: 'der Freumd', soll: 'der Freund' },
+  ]);
+  assert.deepEqual(pruefeAntwort(fugere, felder, 'fugere, fugiō, fūgī, fliehen vor').tippfehler, []);
+  assert.deepEqual(pruefeAntwort(fugere, felder, 'fugere, fugio, fugi, fliehen').tippfehler, []);
+});

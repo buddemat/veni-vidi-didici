@@ -402,6 +402,12 @@ function lateinEndungenGleich(na, nb) {
 // Soll-Werts - oder null, wenn keine Variante innerhalb der Toleranz liegt.
 // latein: Soll-Wert ist lateinisch, Endungen müssen exakt stimmen (s.o.).
 function besteVarianzDistanz(sollVarianten, segment, latein = false) {
+  return besteVariante(sollVarianten, segment, latein)?.distanz ?? null;
+}
+
+// Wie besteVarianzDistanz, aber mit der passenden Variante selbst - für die
+// Tippfehler-Anzeige ("fliehan -> fliehen"): { distanz, variante } oder null.
+function besteVariante(sollVarianten, segment, latein = false) {
   const nb = normalisiere(segment);
   let beste = null;
   for (const soll of sollVarianten) {
@@ -419,14 +425,14 @@ function besteVarianzDistanz(sollVarianten, segment, latein = false) {
       if (!segArtikel || segArtikel.artikel !== sollArtikel.artikel) continue;
       const distanz = levenshteinDistanz(sollArtikel.rest, segArtikel.rest);
       const schwelle = toleranzSchwelle(sollArtikel.rest, segArtikel.rest);
-      if (distanz <= schwelle && (beste === null || distanz < beste)) beste = distanz;
+      if (distanz <= schwelle && (beste === null || distanz < beste.distanz)) beste = { distanz, variante: soll };
       continue;
     }
 
     const distanz = levenshteinDistanz(na, nb);
     const schwelle = toleranzSchwelle(na, nb);
     if (distanz > 0 && latein && !lateinEndungenGleich(na, nb)) continue;
-    if (distanz <= schwelle && (beste === null || distanz < beste)) beste = distanz;
+    if (distanz <= schwelle && (beste === null || distanz < beste.distanz)) beste = { distanz, variante: soll };
   }
   return beste;
 }
@@ -648,6 +654,15 @@ export function pruefeAntwort(vokabel, abfrageFelder, rohtext, tippfehlerErlaubt
   const zuordnung = ordneZu(erwarteteWerte, segmente);
   const belegteSegmente = new Set(zuordnung.values());
 
+  // Per Tippfehlertoleranz akzeptierte Angaben, zum Anzeigen ("fliehan ->
+  // fliehen"), in der Reihenfolge der Antwort. Reine Normalisierung
+  // (Makronen, ä/ae, u/v, i/j) zählt nicht als Tippfehler - Distanz 0.
+  const tippfehler = [...zuordnung]
+    .map(([ei, si]) => ({ si, beste: besteVariante(erwarteteWerte[ei].sollVarianten, segmente[si], erwarteteWerte[ei].latein) }))
+    .filter(({ beste }) => beste.distanz > 0)
+    .sort((a, b) => a.si - b.si)
+    .map(({ si, beste }) => ({ getippt: segmente[si], soll: beste.variante }));
+
   const formErgebnisse = {};
   formFelder.forEach(feldKey => {
     const soll = vokabel.formen[feldKey];
@@ -740,6 +755,7 @@ export function pruefeAntwort(vokabel, abfrageFelder, rohtext, tippfehlerErlaubt
     bedeutungErgebnisse,
     kannBedeutungErgebnisse,
     unerwarteteSegmente,
+    tippfehler,
   };
 }
 
