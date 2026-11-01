@@ -2,7 +2,7 @@ import { getStore, aktualisiereFortschritt, stelleFortschrittWiederHer } from '.
 import { getAktuellenPool, getAktuellenAbfrageModus, getAktuellesRundenende } from './lektionsauswahl.js';
 import { zeigeScreen } from './screens.js';
 import { abfrageLabel, rueckfrageLabel } from './einstellungen.js';
-import { pruefeAntwort, normalisiere, aktiveAbfrageFelder } from './pruefung.js';
+import { pruefeAntwort, aktiveAbfrageFelder, kombiniereRohtext } from './pruefung.js';
 import { mitMikrofon, eingabeFokussieren } from './spracheingabe.js';
 import { baueStapel, wiederEinreihen } from './ziehung.js';
 
@@ -364,33 +364,6 @@ function rueckfrageAnzeigen(vokabel, abfrageFelder, fehlendeListe, bisherigerRoh
     }
   });
   eingabeFokussieren(eingabe);
-}
-
-// Baut den kombinierten Antworttext für die (Neu-)Prüfung. Im Normalfall
-// wird die neue Eingabe einfach als weiteres Komma-Segment angehängt. Bei
-// der Artikel-Rückfrage (eintrag.segment gesetzt) wird die Antwort
-// stattdessen DIREKT VOR das betroffene Segment gesetzt ("Esel" ->
-// "der Esel"), statt als eigenes Segment - sonst würde z.B. "der" als Genus
-// statt als Vervollständigung der Bedeutung interpretiert.
-function kombiniereRohtext(eintrag, bisherigerRohtext, eigeneEingabe) {
-  if (!eigeneEingabe) return bisherigerRohtext;
-  if (eintrag?.segment) {
-    const teile = bisherigerRohtext.split(',').map(t => t.trim());
-    const index = teile.findIndex(t => t === eintrag.segment);
-    if (index !== -1) {
-      // Manche Kinder wiederholen beim Artikel gleich das ganze (korrekt
-      // geschriebene) Wort ("die Sonne" statt nur "die") - dann nicht
-      // nochmal anhängen. Wichtig: gegen die KORREKTE Schreibweise prüfen
-      // (eintrag.korrektesWort), nicht gegen das ggf. falsch getippte
-      // Segment - sonst würde "die Sonne" nicht als "enthält das Wort schon"
-      // erkannt, wenn ursprünglich "Sonde" (Tippfehler) getippt wurde.
-      const zuPruefendesWort = eintrag.korrektesWort || eintrag.segment;
-      const enthaeltSchonDasWort = normalisiere(eigeneEingabe).includes(normalisiere(zuPruefendesWort));
-      teile[index] = enthaeltSchonDasWort ? eigeneEingabe : `${eigeneEingabe} ${eintrag.segment}`;
-      return teile.join(', ');
-    }
-  }
-  return bisherigerRohtext ? `${bisherigerRohtext}, ${eigeneEingabe}` : eigeneEingabe;
 }
 
 function antwortPruefen(

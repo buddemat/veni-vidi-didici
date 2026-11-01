@@ -197,6 +197,38 @@ export function trenneGenusAus(segmente) {
   return { genus, rest };
 }
 
+// Baut den kombinierten Antworttext für die (Neu-)Prüfung. Im Normalfall
+// wird die neue Eingabe einfach als weiteres Komma-Segment angehängt. Bei
+// der Artikel-Rückfrage (eintrag.segment gesetzt) wird die Antwort
+// stattdessen DIREKT VOR das betroffene Segment gesetzt ("Esel" ->
+// "der Esel"), statt als eigenes Segment - sonst würde z.B. "der" als Genus
+// statt als Vervollständigung der Bedeutung interpretiert.
+export function kombiniereRohtext(eintrag, bisherigerRohtext, eigeneEingabe) {
+  if (!eigeneEingabe) return bisherigerRohtext;
+  if (eintrag?.segment) {
+    const teile = bisherigerRohtext.split(',').map(t => t.trim());
+    // Das Segment kann im Rohtext noch ein angehängtes Genus tragen
+    // ("Sonne m"; trenneGenusAus() hat es für die Prüfung abgetrennt) - dann
+    // den Artikel vor das Wort innerhalb des Rohsegments setzen
+    // ("die Sonne m"), sonst würde "die" als eigenes Genus gewertet.
+    const index = teile.findIndex(t => t === eintrag.segment || erkenneGenusPraefixOderSuffix(t)?.rest === eintrag.segment);
+    if (index !== -1) {
+      // Manche Kinder wiederholen beim Artikel gleich das ganze (korrekt
+      // geschriebene) Wort ("die Sonne" statt nur "die") - dann nicht
+      // nochmal anhängen. Wichtig: gegen die KORREKTE Schreibweise prüfen
+      // (eintrag.korrektesWort), nicht gegen das ggf. falsch getippte
+      // Segment - sonst würde "die Sonne" nicht als "enthält das Wort schon"
+      // erkannt, wenn ursprünglich "Sonde" (Tippfehler) getippt wurde.
+      const zuPruefendesWort = eintrag.korrektesWort || eintrag.segment;
+      const enthaeltSchonDasWort = normalisiere(eigeneEingabe).includes(normalisiere(zuPruefendesWort));
+      const ersatz = enthaeltSchonDasWort ? eigeneEingabe : `${eigeneEingabe} ${eintrag.segment}`;
+      teile[index] = teile[index].replace(eintrag.segment, () => ersatz);
+      return teile.join(', ');
+    }
+  }
+  return bisherigerRohtext ? `${bisherigerRohtext}, ${eigeneEingabe}` : eigeneEingabe;
+}
+
 // Manche Lemmata/Formen/Bedeutungen enthalten Klammer-Zusätze - mal reine
 // Grammatik-Hinweise ("vacō (m. Abl.)" = regiert Ablativ), mal optionale
 // Wortbestandteile ("(ver)brennen", "dext(e)ra").

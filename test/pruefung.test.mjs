@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pruefeAntwort, aktiveAbfrageFelder, sollVarianten } from '../www/js/pruefung.js';
+import { pruefeAntwort, aktiveAbfrageFelder, sollVarianten, kombiniereRohtext } from '../www/js/pruefung.js';
 import { seed, beispielSeed, alleVokabelnAus } from './seed.mjs';
 
 const alleVokabeln = alleVokabelnAus(seed);
@@ -453,4 +453,24 @@ test('two genders, each attached to its meaning, are accepted', () => {
   const sol = { wortart: 'substantiv', lemma: 'sōl', formen: { genus: 'm' }, bedeutungen: [{ text: 'die Sonne', typ: 'muss' }, { text: 'der Tag', typ: 'kann' }] };
   assert.equal(pruefeAntwort(sol, ['genus'], 'sol, die Sonne maskulinum, der Tag femininum').richtig, false);
   assert.equal(pruefeAntwort(sol, ['genus'], 'sol, die Sonne maskulinum, der Tag maskulinum').richtig, true);
+});
+
+// Article follow-up when the gender was attached to the meaning ("Sonne m"):
+// the answer "die" must go in front of "Sonne" inside that segment, not
+// become a separate segment that counts as a second (wrong) gender.
+test('article follow-up works when the gender is attached to the meaning', () => {
+  const sol = {
+    wortart: 'substantiv', lemma: 'sōl', formen: { genitiv_sg: 'sōlis', genus: 'm' },
+    bedeutungen: [{ text: 'die Sonne', typ: 'muss' }],
+  };
+  for (const erste of ['sol, solis, Sonne m', 'sol, solis, maskulinum Sonne', 'sol, solis, m, Sonne']) {
+    const ergebnis = pruefeAntwort(sol, ['genitiv_sg', 'genus'], erste);
+    const [bedeutung] = ergebnis.bedeutungErgebnisse;
+    assert.equal(bedeutung.fehltNurArtikel, true, erste);
+    const eintrag = { segment: bedeutung.artikelKandidatSegment, korrektesWort: 'Sonne' };
+    for (const antwort of ['die', 'die Sonne']) {
+      const rohtext = kombiniereRohtext(eintrag, erste, antwort);
+      assert.equal(pruefeAntwort(sol, ['genitiv_sg', 'genus'], rohtext).richtig, true, `${erste} + ${antwort}: ${rohtext}`);
+    }
+  }
 });
