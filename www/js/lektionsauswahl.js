@@ -80,15 +80,26 @@ function lektionBeschriftung(nr) {
   return `Lektion ${nr} (${gruppenNachLektion[nr].length} Vokabeln${insel ? ` + ${insel} Inselwortschatz` : ''})`;
 }
 
-function bisOptionenBefuellen(select, lektionNr) {
+// Die Wörter, bis zu denen man wählen kann, passend zur Inselwortschatz-
+// Auswahl: nur die Lektion, Lektion und danach ihr Inselwortschatz
+// (durchnummeriert, mit "(Insel)" markiert) oder nur der Inselwortschatz.
+// Die bisherige Auswahl bleibt erhalten, wenn es das Wort weiter gibt.
+function bisOptionenBefuellen(select, lektionNr, inselwortschatz) {
+  const vorher = select.value;
   select.innerHTML = '';
-  const liste = gruppenNachLektion[lektionNr] || [];
-  liste.forEach((vokabel, index) => {
+  const liste = inselwortschatz === 'nur' ? [] : gruppenNachLektion[lektionNr] || [];
+  const insel = inselwortschatz === 'ohne' ? [] : inselNachLektion[lektionNr] || [];
+  const eintraege = [
+    ...liste.map(vokabel => ({ vokabel, zusatz: '' })),
+    ...insel.map(vokabel => ({ vokabel, zusatz: inselwortschatz === 'mit' ? ' (Insel)' : '' })),
+  ];
+  eintraege.forEach(({ vokabel, zusatz }, index) => {
     const option = document.createElement('option');
     option.value = vokabel.id;
-    option.textContent = `${index + 1}. ${vokabel.lemma}`;
+    option.textContent = `${index + 1}. ${vokabel.lemma}${zusatz}`;
     select.appendChild(option);
   });
+  if (eintraege.some(e => e.vokabel.id === vorher)) select.value = vorher;
 }
 
 export function renderLektionsauswahl() {
@@ -138,7 +149,6 @@ export function renderLektionsauswahl() {
     const text = document.createElement('span');
     text.textContent = lektionBeschriftung(nr);
     zeile.append(checkbox, text);
-    checkbox.addEventListener('change', () => bisAuswahlAktualisieren());
     mehrereListe.appendChild(zeile);
     mehrereCheckboxen.push(checkbox);
   }
@@ -151,6 +161,55 @@ export function renderLektionsauswahl() {
     if (radioEinzel.checked) return Number(einzelSelect.value);
     const ausgewaehlt = mehrereCheckboxen.filter(c => c.checked).map(c => Number(c.value));
     return ausgewaehlt.length ? Math.max(...ausgewaehlt) : null;
+  }
+
+  function ausgewaehlteLektionen() {
+    return radioEinzel.checked
+      ? [Number(einzelSelect.value)]
+      : mehrereCheckboxen.filter(c => c.checked).map(c => Number(c.value));
+  }
+
+  // --- Inselwortschatz (optional) - sitzt in der jeweils sichtbaren
+  // Lektions-Karte, da er bestimmt, welche Wörter die Lektion umfasst ---
+  const inselBereich = document.createElement('div');
+  inselBereich.className = 'insel-auswahl';
+  const inselTitel = document.createElement('label');
+  inselTitel.textContent = 'Inselwortschatz';
+  inselBereich.appendChild(inselTitel);
+  const { zeile: zeileInselOhne, radio: radioInselOhne } = radioZeile(
+    'inselwortschatz', 'ohne', 'Ohne Inselwortschatz abfragen', true
+  );
+  const { zeile: zeileInselMit, radio: radioInselMit } = radioZeile(
+    'inselwortschatz', 'mit', 'Inselwortschatz mitabfragen'
+  );
+  const { zeile: zeileInselNur, radio: radioInselNur } = radioZeile(
+    'inselwortschatz', 'nur', 'Nur Inselwortschatz abfragen'
+  );
+  inselBereich.append(zeileInselOhne, zeileInselMit, zeileInselNur);
+
+  function inselModus() {
+    return radioInselMit.checked ? 'mit' : radioInselNur.checked ? 'nur' : 'ohne';
+  }
+
+  // Die zuletzt bewusst gewählte Einstellung - wird wiederhergestellt, wenn
+  // man von einer Lektion ohne Inselwortschatz (dort ist nur "Ohne" wählbar)
+  // wieder zu einer mit wechselt.
+  let gewuenschterInselModus = 'ohne';
+  for (const radio of [radioInselOhne, radioInselMit, radioInselNur]) {
+    radio.addEventListener('change', () => {
+      gewuenschterInselModus = radio.value;
+      bisAuswahlAktualisieren();
+    });
+  }
+
+  function inselAuswahlAktualisieren() {
+    const vorhanden = ausgewaehlteLektionen().some(nr => inselNachLektion[nr]?.length);
+    radioInselMit.disabled = !vorhanden;
+    radioInselNur.disabled = !vorhanden;
+    const modus = vorhanden ? gewuenschterInselModus : 'ohne';
+    radioInselOhne.checked = modus === 'ohne';
+    radioInselMit.checked = modus === 'mit';
+    radioInselNur.checked = modus === 'nur';
   }
 
   // --- Unterbereich: bis zu einer Stelle (gilt für die jeweils letzte Lektion) ---
@@ -174,43 +233,31 @@ export function renderLektionsauswahl() {
   bisKarte.appendChild(bisAuswahlBereich);
   container.appendChild(bisKarte);
 
+  // Ohne wählbare Wörter (z.B. "Nur Inselwortschatz", aber die letzte
+  // Lektion hat keinen) ist "bis" nicht möglich.
   function bisAuswahlAktualisieren() {
-    const letzteLektion = letzteAusgewaehlteLektion();
-    bisOptionenBefuellen(bisSelect, letzteLektion);
-  }
-  bisCheckbox.addEventListener('change', () => {
+    bisOptionenBefuellen(bisSelect, letzteAusgewaehlteLektion(), inselModus());
+    bisCheckbox.disabled = bisSelect.options.length === 0;
+    if (bisCheckbox.disabled) bisCheckbox.checked = false;
     bisAuswahlBereich.hidden = !bisCheckbox.checked;
-    if (bisCheckbox.checked) bisAuswahlAktualisieren();
-  });
-  einzelSelect.addEventListener('change', () => {
-    if (bisCheckbox.checked) bisAuswahlAktualisieren();
-  });
+  }
+  bisCheckbox.addEventListener('change', bisAuswahlAktualisieren);
+
+  function lektionenGeaendert() {
+    inselAuswahlAktualisieren();
+    bisAuswahlAktualisieren();
+  }
+  einzelSelect.addEventListener('change', lektionenGeaendert);
+  for (const checkbox of mehrereCheckboxen) checkbox.addEventListener('change', lektionenGeaendert);
 
   function modusAktualisieren() {
     einzelKarte.hidden = !radioEinzel.checked;
     mehrereKarte.hidden = !radioMehrere.checked;
-    if (bisCheckbox.checked) bisAuswahlAktualisieren();
+    (radioEinzel.checked ? einzelKarte : mehrereKarte).appendChild(inselBereich);
+    lektionenGeaendert();
   }
   radioEinzel.addEventListener('change', modusAktualisieren);
   radioMehrere.addEventListener('change', modusAktualisieren);
-
-  // --- Inselwortschatz (optional) ---
-  const inselKarte = document.createElement('div');
-  inselKarte.className = 'karte';
-  const inselTitel = document.createElement('h3');
-  inselTitel.textContent = 'Inselwortschatz';
-  inselKarte.appendChild(inselTitel);
-  const { zeile: zeileInselOhne, radio: radioInselOhne } = radioZeile(
-    'inselwortschatz', 'ohne', 'Ohne Inselwortschatz abfragen', true
-  );
-  const { zeile: zeileInselMit, radio: radioInselMit } = radioZeile(
-    'inselwortschatz', 'mit', 'Inselwortschatz mitabfragen'
-  );
-  const { zeile: zeileInselNur, radio: radioInselNur } = radioZeile(
-    'inselwortschatz', 'nur', 'Nur Inselwortschatz abfragen'
-  );
-  inselKarte.append(zeileInselOhne, zeileInselMit, zeileInselNur);
-  container.appendChild(inselKarte);
 
   // --- Abfragemodus ---
   const abfrageModusKarte = document.createElement('div');
@@ -248,9 +295,7 @@ export function renderLektionsauswahl() {
   startButton.className = 'primaer';
   startButton.textContent = 'Abfrage starten';
   startButton.addEventListener('click', () => {
-    const lektionen = radioEinzel.checked
-      ? [Number(einzelSelect.value)]
-      : mehrereCheckboxen.filter(c => c.checked).map(c => Number(c.value));
+    const lektionen = ausgewaehlteLektionen();
     if (lektionen.length === 0) {
       alert('Bitte mindestens eine Lektion auswählen.');
       return;
@@ -264,15 +309,13 @@ export function renderLektionsauswahl() {
       bisId: bisCheckbox.checked ? bisSelect.value : null,
       abfrageModus: radioGewichtet.checked ? 'gewichtet' : 'gleichverteilt',
       rundenende: radioAlleRichtig.checked ? 'alle-richtig' : radioManuell.checked ? 'manuell' : 'alle-einmal',
-      inselwortschatz: radioInselMit.checked ? 'mit' : radioInselNur.checked ? 'nur' : 'ohne',
+      inselwortschatz: inselModus(),
     };
 
-    // Z.B. "Nur Inselwortschatz" bei einer Lektion ohne Inselwortschatz.
+    // Sollte durch die gesperrten Inselwortschatz-Optionen nicht vorkommen.
     const pool = bauePool(gruppenNachLektion, auswahl, inselNachLektion);
     if (pool.length === 0) {
-      alert(auswahl.inselwortschatz === 'nur'
-        ? 'Zu dieser Auswahl gibt es keinen Inselwortschatz.'
-        : 'Diese Auswahl enthält keine Vokabeln.');
+      alert('Diese Auswahl enthält keine Vokabeln.');
       return;
     }
 
@@ -286,6 +329,8 @@ export function renderLektionsauswahl() {
   // --- Mit der zuletzt gestarteten Auswahl vorbelegen ---
   const letzte = getStore().profil.letzteAbfrage;
   if (letzte) {
+    // Vor den Lektionen, da die "bis"-Liste davon abhängt.
+    gewuenschterInselModus = ['mit', 'nur'].includes(letzte.inselwortschatz) ? letzte.inselwortschatz : 'ohne';
     const vorhandene = letzte.lektionen.filter(nr => gruppenNachLektion[nr]);
     if (vorhandene.length > 0) {
       if (letzte.modus === 'mehrere') {
@@ -295,11 +340,10 @@ export function renderLektionsauswahl() {
         einzelSelect.value = String(vorhandene[0]);
       }
       modusAktualisieren();
-      if (letzte.bisId) {
+      if (letzte.bisId && [...bisSelect.options].some(o => o.value === letzte.bisId)) {
         bisCheckbox.checked = true;
+        bisSelect.value = letzte.bisId;
         bisAuswahlBereich.hidden = false;
-        bisAuswahlAktualisieren();
-        if ([...bisSelect.options].some(o => o.value === letzte.bisId)) bisSelect.value = letzte.bisId;
       }
     }
     radioGewichtet.checked = letzte.abfrageModus === 'gewichtet';
@@ -307,10 +351,8 @@ export function renderLektionsauswahl() {
     radioAlleRichtig.checked = letzte.rundenende === 'alle-richtig';
     radioManuell.checked = letzte.rundenende === 'manuell';
     radioAlleEinmal.checked = !radioAlleRichtig.checked && !radioManuell.checked;
-    radioInselMit.checked = letzte.inselwortschatz === 'mit';
-    radioInselNur.checked = letzte.inselwortschatz === 'nur';
-    radioInselOhne.checked = !radioInselMit.checked && !radioInselNur.checked;
   }
+  modusAktualisieren();
 }
 
 export function initLektionsauswahl() {

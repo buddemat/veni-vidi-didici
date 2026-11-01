@@ -35,7 +35,7 @@ export function renderSchnellstart() {
 
   const letztePool = letzte ? bauePool(gruppen, letzte, inselGruppen) : [];
   const wieZuletzt = letztePool.length > 0
-    ? knopf(`Wie zuletzt (${beschreibeAuswahl(gruppen, letzte)})`, () => {
+    ? knopf(`Wie zuletzt (${beschreibeAuswahl(gruppen, letzte, inselGruppen)})`, () => {
       starteRunde(bauePool(gruppen, letzte, inselGruppen), abfrageModus, rundenende);
     })
     : knopf('Wie zuletzt', () => {}, true);
@@ -44,7 +44,7 @@ export function renderSchnellstart() {
   const neueste = neuesteGefunden && { ...neuesteGefunden, inselwortschatz };
   const neuestePool = neueste ? bauePool(gruppen, neueste, inselGruppen) : [];
   const neuesteLektion = neueste
-    ? knopf(`Neueste Lektion (${beschreibeAuswahl(gruppen, neueste)})`, () => {
+    ? knopf(`Neueste Lektion (${beschreibeAuswahl(gruppen, neueste, inselGruppen)})`, () => {
       starteRunde(bauePool(gruppen, neueste, inselGruppen), abfrageModus, rundenende);
     }, neuestePool.length === 0)
     : knopf('Neueste Lektion', () => {}, true);

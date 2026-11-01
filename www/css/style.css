@@ -260,6 +260,12 @@ input[type="text"]:focus, select:focus {
   accent-color: var(--farbe-akzent);
 }
 
+/* Nicht wählbare Option (z.B. Inselwortschatz bei einer Lektion ohne). */
+.einstellungen-zeile:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .start-inhalt {
   display: flex;
   flex-direction: column;

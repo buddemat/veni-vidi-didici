@@ -161,3 +161,34 @@ test('wichtigeVokabelIds and beschreibeAuswahl follow the Inselwortschatz choice
   assert.equal(beschreibeAuswahl(lektionsGruppen, { lektionen: [1, 2], inselwortschatz: 'nur' }), 'L1–2, nur Inselwortschatz');
   assert.equal(beschreibeAuswahl(lektionsGruppen, { lektionen: [2] }), 'L2');
 });
+
+// "Bis" can also point at an Inselwort (offered in the list when the
+// Inselwortschatz is quizzed too or alone): then the lesson's Inselwortschatz
+// up to that word.
+test('bauePool and beschreibeAuswahl: "bis" pointing at an Inselwort', () => {
+  const v = {
+    'L03-001': { id: 'L03-001', lektion: 3 },
+    'L04-001': { id: 'L04-001', lektion: 4 },
+    'L04-002': { id: 'L04-002', lektion: 4 },
+    'L04-003': { id: 'L04-003', lektion: 4, fakultativ: true },
+    'L04-004': { id: 'L04-004', lektion: 4, fakultativ: true },
+  };
+  const gruppen = gruppiereNachLektion(v);
+  const insel = gruppiereInselNachLektion(v);
+  const auswahl = { lektionen: [4], bisId: 'L04-003' };
+  assert.deepEqual(bauePool(gruppen, { ...auswahl, inselwortschatz: 'mit' }, insel), ['L04-001', 'L04-002', 'L04-003']);
+  assert.deepEqual(bauePool(gruppen, { ...auswahl, inselwortschatz: 'nur' }, insel), ['L04-003']);
+  // without Inselwortschatz, an Inselwort as "bis" is ignored
+  assert.deepEqual(bauePool(gruppen, { ...auswahl, inselwortschatz: 'ohne' }, insel), ['L04-001', 'L04-002']);
+  // only the highest lesson is cut off
+  assert.deepEqual(bauePool(gruppen, { lektionen: [3, 4], bisId: 'L04-003', inselwortschatz: 'mit' }, insel),
+    ['L03-001', 'L04-001', 'L04-002', 'L04-003']);
+
+  assert.equal(beschreibeAuswahl(gruppen, { ...auswahl, inselwortschatz: 'mit' }, insel), 'L4 + Inselwortschatz bis Nr. 1');
+  assert.equal(beschreibeAuswahl(gruppen, { ...auswahl, inselwortschatz: 'nur' }, insel), 'L4, nur Inselwortschatz bis Nr. 1');
+  assert.equal(beschreibeAuswahl(gruppen, { ...auswahl, inselwortschatz: 'ohne' }, insel), 'L4');
+  // up to a lesson word: its Inselwortschatz is not included, so not mentioned
+  assert.equal(beschreibeAuswahl(gruppen, { lektionen: [4], bisId: 'L04-002', inselwortschatz: 'mit' }, insel), 'L4 bis Nr. 2');
+  assert.equal(beschreibeAuswahl(lektionsGruppen, { lektionen: [1, 2], bisId: 'L02-001', inselwortschatz: 'mit' }, inselGruppen),
+    'L1–2 bis Nr. 1 + Inselwortschatz');
+});

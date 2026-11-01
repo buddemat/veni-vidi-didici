@@ -41,8 +41,9 @@ function gruppiere(vokabeln, filter) {
 // davon optional nur bis einschließlich bisId. Nicht (mehr) vorhandene
 // Lektionen werden ignoriert, ebenso eine bisId, die nicht in dieser Lektion
 // liegt. `inselwortschatz`: 'ohne' (Standard), 'mit' oder 'nur' - der
-// Inselwortschatz einer Lektion folgt deren Wörtern; ist die höchste
-// Lektion nur bis bisId gewählt, gehört ihr Inselwortschatz noch nicht dazu.
+// Inselwortschatz einer Lektion folgt deren Wörtern. bisId kann ein Wort der
+// Lektion sein (dann gehört ihr Inselwortschatz noch nicht dazu) oder - bei
+// 'mit'/'nur' - ein Inselwort (dann der Inselwortschatz bis dorthin).
 export function bauePool(gruppen, { lektionen, bisId = null, inselwortschatz = 'ohne' }, inselGruppen = {}) {
   const vorhanden = [...new Set(lektionen)].filter(nr => gruppen[nr]).sort((a, b) => a - b);
   if (vorhanden.length === 0) return [];
@@ -50,10 +51,19 @@ export function bauePool(gruppen, { lektionen, bisId = null, inselwortschatz = '
   const pool = [];
   for (const nr of vorhanden) {
     let liste = gruppen[nr];
-    const bisGilt = nr === hoechste && bisId && liste.some(v => v.id === bisId);
-    if (bisGilt) liste = liste.slice(0, liste.findIndex(v => v.id === bisId) + 1);
+    let insel = inselGruppen[nr] || [];
+    if (nr === hoechste && bisId) {
+      const index = liste.findIndex(v => v.id === bisId);
+      const inselIndex = insel.findIndex(v => v.id === bisId);
+      if (index !== -1) {
+        liste = liste.slice(0, index + 1);
+        insel = [];
+      } else if (inselIndex !== -1) {
+        insel = insel.slice(0, inselIndex + 1);
+      }
+    }
     if (inselwortschatz !== 'nur') pool.push(...liste.map(v => v.id));
-    if (inselwortschatz !== 'ohne' && !bisGilt) pool.push(...(inselGruppen[nr] || []).map(v => v.id));
+    if (inselwortschatz !== 'ohne') pool.push(...insel.map(v => v.id));
   }
   return pool;
 }
@@ -116,7 +126,7 @@ export function wichtigeVokabelIds(vokabeln, fortschritt, profil, inselwortschat
 // Kurzbeschreibung einer Auswahl für die Schnellstart-Knöpfe, z.B. "L23",
 // "L20–24", "L5, L7", "L24 bis Nr. 12" oder "L6 + Inselwortschatz".
 // Aufeinanderfolgende Lektionen werden zu Bereichen zusammengefasst.
-export function beschreibeAuswahl(gruppen, { lektionen, bisId = null, inselwortschatz = 'ohne' }) {
+export function beschreibeAuswahl(gruppen, { lektionen, bisId = null, inselwortschatz = 'ohne' }, inselGruppen = {}) {
   const nummern = [...new Set(lektionen)].filter(nr => gruppen[nr]).sort((a, b) => a - b);
   const bereiche = [];
   for (const nr of nummern) {
@@ -125,11 +135,17 @@ export function beschreibeAuswahl(gruppen, { lektionen, bisId = null, inselworts
     else bereiche.push([nr, nr]);
   }
   let text = bereiche.map(([von, bis]) => (von === bis ? `L${von}` : `L${von}–${bis}`)).join(', ');
-  if (bisId && nummern.length > 0) {
-    const index = gruppen[nummern[nummern.length - 1]].findIndex(v => v.id === bisId);
-    if (index !== -1) text += ` bis Nr. ${index + 1}`;
-  }
-  if (inselwortschatz === 'mit') text += ' + Inselwortschatz';
+  const hoechste = nummern[nummern.length - 1];
+  const index = bisId && nummern.length > 0 ? gruppen[hoechste].findIndex(v => v.id === bisId) : -1;
+  const inselIndex = bisId && nummern.length > 0 && inselwortschatz !== 'ohne'
+    ? (inselGruppen[hoechste] || []).findIndex(v => v.id === bisId)
+    : -1;
+  if (index !== -1) text += ` bis Nr. ${index + 1}`;
+  // Bei "bis" zu einem Wort der höchsten Lektion kommt deren Inselwortschatz
+  // nicht dazu - dann nur erwähnen, wenn eine frühere Lektion welchen hat.
+  const mitInsel = index === -1 || nummern.slice(0, -1).some(nr => inselGruppen[nr]?.length);
+  if (inselwortschatz === 'mit' && mitInsel) text += ' + Inselwortschatz';
   if (inselwortschatz === 'nur') text += ', nur Inselwortschatz';
+  if (inselIndex !== -1) text += ` bis Nr. ${inselIndex + 1}`;
   return text;
 }
