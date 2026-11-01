@@ -25,6 +25,9 @@ function standardEinstellungen() {
     // Nach einer falschen Antwort einen Button "Als richtig werten" zeigen
     // (für Antworten, die nur an Komma, Tippfehler o.Ä. gescheitert sind).
     als_richtig_werten_aktiv: false,
+    // Bei jeder neuen Karte die Aussprache des lateinischen Worts abspielen
+    // (sofern es eine Aufnahme gibt).
+    audio_autoplay_aktiv: false,
   };
 }
 

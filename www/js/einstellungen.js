@@ -122,6 +122,7 @@ export function renderEinstellungen() {
     einstellungsSchalter('rueckfragen_aktiv', 'Bei unvollständigen Antworten nachfragen'),
     einstellungsSchalter('tippfehlertoleranz_aktiv', 'Kleine Tippfehler tolerieren'),
     einstellungsSchalter('als_richtig_werten_aktiv', 'Button „Als richtig werten“ bei falschen Antworten anzeigen'),
+    einstellungsSchalter('audio_autoplay_aktiv', 'Lateinisches Audio automatisch abspielen'),
   );
   container.appendChild(abfrageKarte);
 

@@ -5,6 +5,7 @@ import { abfrageLabel, rueckfrageLabel } from './einstellungen.js';
 import { pruefeAntwort, aktiveAbfrageFelder, kombiniereRohtext } from './pruefung.js';
 import { mitMikrofon, eingabeFokussieren } from './spracheingabe.js';
 import { baueStapel, wiederEinreihen } from './ziehung.js';
+import { hatAudio, spieleAudio, stoppeAudio } from './audio.js';
 
 const GENUS_TEXT = { m: 'Maskulinum (m)', f: 'Femininum (f)', n: 'Neutrum (n)' };
 
@@ -529,6 +530,16 @@ function aktualisiereFortschrittsAnzeige() {
   if (container) container.replaceChildren(...fortschrittsBalkenListe());
 }
 
+function lautsprecherKnopf(vokabel) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'lautsprecher-knopf';
+  button.textContent = '🔊';
+  button.setAttribute('aria-label', 'Aussprache anhören');
+  button.addEventListener('click', () => spieleAudio(vokabel));
+  return button;
+}
+
 function renderKarte() {
   rueckfrageZaehler = 0;
 
@@ -551,6 +562,14 @@ function renderKarte() {
     inselHinweis.className = 'hinweis abfrage-insel-hinweis';
     inselHinweis.textContent = 'Inselwortschatz';
     lemmaKarte.appendChild(inselHinweis);
+  }
+  // Lautsprecher-Knopf nur, wenn es zu diesem Wort eine Aufnahme gibt.
+  if (hatAudio(vokabel)) {
+    lemmaKarte.classList.add('mit-audio');
+    lemmaKarte.appendChild(lautsprecherKnopf(vokabel));
+    // Automatisch nur bei einer neuen Karte, nicht bei Rückfragen (die
+    // rendern die Lemma-Karte nicht neu).
+    if (store.einstellungen.audio_autoplay_aktiv) spieleAudio(vokabel);
   }
   container.appendChild(lemmaKarte);
 
@@ -667,6 +686,7 @@ function fehlerListeElement() {
 }
 
 function beendeRunde(abschlussHinweis = null) {
+  stoppeAudio();
   const inhalt = document.getElementById('ergebnis-inhalt');
   inhalt.innerHTML = '';
   if (abschlussHinweis) {

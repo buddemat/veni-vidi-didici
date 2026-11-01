@@ -429,6 +429,26 @@ details .karte {
   padding: 28px var(--abstand);
 }
 
+/* Platz für den Lautsprecher-Knopf rechts oben - auf beiden Seiten, damit
+   das Wort mittig bleibt. */
+.abfrage-lemma.mit-audio {
+  position: relative;
+  padding-left: 64px;
+  padding-right: 64px;
+}
+
+.lautsprecher-knopf {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 0;
+  width: 48px;
+  min-height: 48px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  font-weight: 400;
+}
+
 /* "Inselwortschatz" unter dem abgefragten Wort. */
 .abfrage-insel-hinweis {
   font-weight: 400;
