@@ -502,8 +502,7 @@ details .karte {
   min-width: 140px;
 }
 
-/* "Prüfen" (bzw. "Weiter" bei einer Rückfrage) und darunter "Ich weiß es
-   nicht": untereinander, mittig. */
+/* "Prüfen" und darunter "Ich weiß es nicht": untereinander, mittig. */
 .antwort-knoepfe:not([hidden]) {
   display: flex;
   flex-direction: column;

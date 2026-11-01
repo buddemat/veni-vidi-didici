@@ -346,26 +346,25 @@ function rueckfrageAnzeigen(vokabel, abfrageFelder, fehlendeListe, bisherigerRoh
 
   container.appendChild(karte);
 
-  const knoepfe = antwortKnoepfe(container, eingabe, 'Weiter', () => (
+  const knoepfe = antwortKnoepfe(container, eingabe, () => (
     antwortPruefen(vokabel, abfrageFelder, eingabe, knoepfe, container, bisherigerRohtext, fehlendeListe[0])
   ));
   eingabeFokussieren(eingabe);
 }
 
-// Primärer Knopf ("Prüfen" bzw. "Weiter" bei einer Rückfrage) und darunter
-// "Ich weiß es nicht". Der primäre Knopf ist gesperrt, solange das Feld leer
-// ist - ein versehentliches Tippen darauf ohne Antwort zählte sonst als
-// falsch. Wer die Antwort nicht weiß, sagt das mit dem zweiten Knopf
+// "Prüfen" (auch bei Rückfragen) und darunter "Ich weiß es nicht".
+// "Prüfen" ist gesperrt, solange das Feld leer ist - ein versehentliches
+// Tippen darauf ohne Antwort zählte sonst als falsch. Wer die Antwort nicht weiß, sagt das mit dem zweiten Knopf
 // ausdrücklich (zählt wie eine leere Antwort: falsch, Lösung wird gezeigt).
 // Gibt die Knopfgruppe zurück; antwortPruefen() blendet sie nach dem Prüfen
 // aus.
-function antwortKnoepfe(container, eingabe, beschriftung, pruefen) {
+function antwortKnoepfe(container, eingabe, pruefen) {
   const knoepfe = document.createElement('div');
   knoepfe.className = 'antwort-knoepfe';
 
   const pruefenButton = document.createElement('button');
   pruefenButton.className = 'primaer';
-  pruefenButton.textContent = beschriftung;
+  pruefenButton.textContent = 'Prüfen';
   pruefenButton.addEventListener('click', pruefen);
 
   const weissNichtButton = document.createElement('button');
@@ -565,7 +564,7 @@ function renderKarte() {
 
   container.appendChild(formular);
 
-  const knoepfe = antwortKnoepfe(container, eingabe, 'Prüfen', () => (
+  const knoepfe = antwortKnoepfe(container, eingabe, () => (
     antwortPruefen(vokabel, abfrageFelder, eingabe, knoepfe, container)
   ));
   eingabeFokussieren(eingabe);
