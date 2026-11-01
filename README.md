@@ -3,16 +3,22 @@
 A Latin vocabulary trainer for Android (Capacitor) and the browser, written in
 plain HTML/CSS/JavaScript without a framework. The user interface is in German.
 
+<p>
+  <img src="screenshots/main.png" alt="Start screen with quick starts" width="240">
+  <img src="screenshots/quiz.png" alt="Quiz: correct answer for esse" width="240">
+  <img src="screenshots/follow-up.png" alt="Follow-up question for the missing gender of asinus" width="240">
+</p>
+
 - Latin → German quizzing: the app shows the lemma, and you enter all forms
   (genitive, gender, principal parts, …) plus the German meanings, either
   by typing or by speech input.
+- Configurable choice of which forms are quizzed.
 - Required and optional meanings: "MUSS" meanings must be given, "KANN"
   meanings may be given.
-- Follow-up questions for incomplete answers instead of revealing the
-  solution right away.
 - Quiz by lesson or up to a given point in the list, either uniformly or
   weighted (words you often get wrong come up more often).
-- Configurable choice of which forms are quizzed.
+- Enable follow-up questions for incomplete answers instead of revealing the
+  solution right away.
 - In-app editor, plus export/import of profile and vocabulary.
 
 ## Vocabulary
