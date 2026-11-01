@@ -30,7 +30,8 @@ export function renderSchnellstart() {
   const letzte = store.profil.letzteAbfrage || null;
   const abfrageModus = letzte?.abfrageModus || STANDARD_ABFRAGEMODUS;
   const rundenende = letzte?.rundenende || STANDARD_RUNDENENDE;
-  // Ohne/mit/nur Inselwortschatz: wie bei der letzten Auswahl.
+  // Für "Wichtigste Wörter": ohne/mit Inselwortschatz wie bei der letzten
+  // Auswahl ("nur" zählt dort wie "mit", siehe wichtigeVokabelIds).
   const inselwortschatz = letzte?.inselwortschatz || 'ohne';
 
   const letztePool = letzte ? bauePool(gruppen, letzte, inselGruppen) : [];
@@ -40,8 +41,9 @@ export function renderSchnellstart() {
     })
     : knopf('Wie zuletzt', () => {}, true);
 
-  const neuesteGefunden = neuesteLektionAuswahl(store.vokabeln, store.fortschritt, store.profil);
-  const neueste = neuesteGefunden && { ...neuesteGefunden, inselwortschatz };
+  // Immer die Lektion selbst, ohne Inselwortschatz - unabhängig von der
+  // letzten Auswahl (dafür gibt es "Wie zuletzt").
+  const neueste = neuesteLektionAuswahl(store.vokabeln, store.fortschritt, store.profil);
   const neuestePool = neueste ? bauePool(gruppen, neueste, inselGruppen) : [];
   const neuesteLektion = neueste
     ? knopf(`Neueste Lektion (${beschreibeAuswahl(gruppen, neueste, inselGruppen)})`, () => {
