@@ -1,6 +1,6 @@
 {
   "name": "veni-vidi-didici",
-  "version": "0.12.0",
+  "version": "1.0.0",
   "description": "VeniVidiDidici - Latein-Vokabeltrainer (Capacitor + Vanilla HTML/CSS/JS)",
   "private": true,
   "scripts": {
