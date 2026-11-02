@@ -21,6 +21,9 @@ plain HTML/CSS/JavaScript without a framework. The user interface is in German.
   weighted (words you often get wrong come up more often).
 - Enable follow-up questions for incomplete answers instead of revealing the
   solution right away.
+- Pronunciation audio: a speaker button plays the Latin word, optionally
+  automatically on each new card. Recordings can also be made or chosen in
+  the editor.
 - In-app editor, plus export/import of profile and vocabulary.
 
 ## Vocabulary
@@ -38,6 +41,27 @@ words are added, changed words are updated (progress is kept), and words
 removed from the file are removed. Words edited, deleted or created in the
 app's editor are left as they are. Keep the IDs of existing words stable: a
 word whose ID now belongs to a different Latin word loses its progress.
+
+## Pronunciation audio
+
+The repository contains no recordings. The app plays
+`www/assets/audio/<ID>.<ext>` (ignored by Git), listed in
+`www/assets/audio/index.json` together with the lemma each file was recorded
+for. A file is only played while that lemma still matches the word (macrons
+and case are ignored), so a reused ID never plays the wrong word. Words
+without a recording simply show no speaker button. With the example
+vocabulary, the app looks in `www/assets/audio-beispiel/` instead.
+
+To build the folder from a set of files named `<ID>.<ext>` or
+`<ID>_anything.<ext>`:
+
+```sh
+node tools/audio-index.js <source folder> www/assets/audio
+```
+
+Recordings made or chosen in the app's editor are stored on the device and
+take precedence over shipped ones. They are not part of the profile export
+and are lost when the app is uninstalled.
 
 ## Development
 
