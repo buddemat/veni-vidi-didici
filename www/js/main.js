@@ -7,6 +7,7 @@ import { initAbfrage } from './abfrage.js';
 import { initEditor } from './editor.js';
 import { initProfil } from './profil.js';
 import { initStartseite } from './startseite.js';
+import { initNachschlagen } from './nachschlagen.js';
 import { APP_VERSION } from './version.js';
 
 initNavigation();
@@ -49,6 +50,7 @@ async function starteApp() {
   initLektionsauswahl();
   initProfil();
   initStartseite();
+  initNachschlagen();
 }
 
 starteApp();

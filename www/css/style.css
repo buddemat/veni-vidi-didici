@@ -559,3 +559,51 @@ details .karte {
   margin-top: 4px;
   font-style: italic;
 }
+
+/* "Vokabel nachschlagen": Suchfeld und Treffer-Karten. */
+.nachschlagen-knoepfe {
+  margin-top: 12px;
+}
+
+.nachschlagen-lemma {
+  font-size: 1.5rem;
+  font-weight: 700;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+.nachschlagen-lemma.mit-audio {
+  position: relative;
+  padding-right: 56px;
+}
+
+.nachschlagen-lemma .lautsprecher-knopf {
+  top: 0;
+  right: 0;
+}
+
+.nachschlagen-treffer .hinweis {
+  margin: 4px 0;
+}
+
+.nachschlagen-angaben {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 12px;
+  margin: 12px 0 8px;
+}
+
+.nachschlagen-angaben dt {
+  color: var(--farbe-text-schwach);
+}
+
+.nachschlagen-angaben dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.nachschlagen-id {
+  font-size: 0.8rem;
+  text-align: right;
+}

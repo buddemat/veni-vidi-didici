@@ -22,6 +22,9 @@
           <h3>Schnellstart</h3>
           <div class="knopf-liste" id="start-schnellstart-knoepfe"></div>
         </div>
+        <div class="knopf-liste">
+          <button data-ziel="nachschlagen">Vokabel nachschlagen</button>
+        </div>
         <div class="start-fill"></div>
         <div class="knopf-liste">
           <button data-ziel="einstellungen">Einstellungen</button>
@@ -87,6 +90,23 @@
         </div>
         <input type="file" id="wortschatz-import-datei" accept="application/json" hidden>
         <div id="vokabelliste-inhalt"></div>
+      </div>
+    </section>
+
+    <section id="nachschlagen" class="screen">
+      <div class="screen-kopf">
+        <button class="zurueck" data-ziel="start" aria-label="Zurück zum Start"><svg class="zurueck-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 4 L7 12 L15 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <h2>Vokabel nachschlagen</h2>
+      </div>
+      <div class="screen-inhalt">
+        <form class="karte" id="nachschlagen-formular">
+          <label for="nachschlagen-eingabe">Lateinisches Wort (Grundform oder angegebene Form, z.B. Perfekt)</label>
+          <input type="text" id="nachschlagen-eingabe" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+          <div class="knopf-liste nachschlagen-knoepfe">
+            <button type="submit" class="primaer">Suchen</button>
+          </div>
+        </form>
+        <div id="nachschlagen-ergebnis"></div>
       </div>
     </section>
 
