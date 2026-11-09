@@ -8,24 +8,7 @@
 // keine Teilwörter, keine Tippfehlertoleranz.
 
 import { normalisiere, levenshteinDistanz } from './pruefung.js';
-
-// Klammern: an ein Wort angehängte Buchstaben sind optional ("caerul(e)a" ->
-// "caerulea" und "caerula"); alles andere ist eine Anmerkung und fällt weg
-// ("videō (m. Akk.)", "(...) utinam").
-const OPTIONALE_BUCHSTABEN = /(\p{L})\((\p{L}+)\)|\((\p{L}+)\)(?=\p{L})/u;
-
-function klammerVarianten(text) {
-  const m = text.match(OPTIONALE_BUCHSTABEN);
-  if (!m) return [text.replace(/\([^)]*\)/g, ' ')];
-  const vorher = m[1] ?? '';
-  const inhalt = m[2] ?? m[3];
-  const davor = text.slice(0, m.index);
-  const danach = text.slice(m.index + m[0].length);
-  return [
-    ...klammerVarianten(`${davor}${vorher}${inhalt}${danach}`),
-    ...klammerVarianten(`${davor}${vorher}${danach}`),
-  ];
-}
+import { klammerVarianten, bildeFormen } from './formen.js';
 
 // Alle normalisierten Suchschlüssel eines Lemma- oder Formtexts. Mehrere
 // Angaben ("servus/serva", "is, ea, id") ergeben je einen Schlüssel.
@@ -98,17 +81,52 @@ function finde(vokabeln, bewerte, ausgenommen = new Set()) {
     }
     if (bester !== null) treffer.push({ vokabel, felder, wert: bester });
   }
+  return sortiere(treffer);
+}
+
+function sortiere(treffer) {
   const imLemma = t => (t.felder.includes('lemma') ? 0 : 1);
   const sortierName = t => normalisiere(t.vokabel.lemma);
   return treffer.sort((a, b) => a.wert - b.wert || imLemma(a) - imLemma(b)
     || sortierName(a).localeCompare(sortierName(b)) || a.vokabel.id.localeCompare(b.vokabel.id));
 }
 
-// Exakte Suche (siehe oben): Lemma oder eine der angegebenen Formen.
+// Gebeugte Formen einer Vokabel (formen.js) als Map normalisierte Form ->
+// Bestimmungen, zwischengespeichert wie die Suchschlüssel.
+const formenCache = new WeakMap();
+
+function gebeugteFormen(vokabel) {
+  let formen = formenCache.get(vokabel);
+  if (!formen) {
+    formen = new Map();
+    for (const { form, bestimmung } of bildeFormen(vokabel)) {
+      const schluessel = normalisiere(form);
+      if (!formen.has(schluessel)) formen.set(schluessel, []);
+      formen.get(schluessel).push(bestimmung);
+    }
+    formenCache.set(vokabel, formen);
+  }
+  return formen;
+}
+
+// Exakte Suche (siehe oben): Lemma oder eine der angegebenen Formen, dazu
+// die gebeugten Formen. Passt die Eingabe zu einer gebeugten Form, bekommt
+// der Treffer `bestimmungen` (z.B. Gen. Sg. und Nom. Pl.). Treffer über
+// Lemma/gespeicherte Formen stehen vor reinen Treffern über gebeugte Formen.
 export function sucheVokabeln(vokabeln, eingabe) {
   const suche = normalisiere(eingabe);
   if (!suche) return [];
-  return finde(vokabeln, s => (s === suche ? 0 : null));
+  const gespeichert = finde(vokabeln, s => (s === suche ? 0 : null));
+  const nachId = new Map(gespeichert.map(t => [t.vokabel.id, t]));
+  const nurGebeugt = [];
+  for (const vokabel of Object.values(vokabeln)) {
+    const bestimmungen = gebeugteFormen(vokabel).get(suche);
+    if (!bestimmungen) continue;
+    const treffer = nachId.get(vokabel.id);
+    if (treffer) treffer.bestimmungen = bestimmungen;
+    else nurGebeugt.push({ vokabel, felder: [], wert: 1, bestimmungen });
+  }
+  return [...gespeichert, ...sortiere(nurGebeugt)];
 }
 
 // "*" als Platzhalter für beliebig viele (auch keine) Zeichen, z.B. "*are"

@@ -653,3 +653,10 @@ details .karte {
   box-shadow: none;
   border: 1px solid var(--farbe-rand);
 }
+
+/* Bestimmung einer gebeugten Form, z.B. "Bestimmung: Gen. Pl.". */
+.nachschlagen-bestimmung {
+  margin: 4px 0;
+  font-weight: 600;
+  color: var(--farbe-akzent);
+}

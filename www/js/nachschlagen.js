@@ -6,6 +6,7 @@ import { feldDefinitionenFuer, abfrageLabel } from './einstellungen.js';
 import { eingabeFokussieren } from './spracheingabe.js';
 import { hatAudio, spieleAudio, stoppeAudio } from './audio.js';
 import { sucheErweitert } from './suche.js';
+import { bestimmungText } from './formen.js';
 
 const WORTART_TEXT = { substantiv: 'Substantiv', verb: 'Verb', adjektiv: 'Adjektiv', sonstiges: 'Sonstiges' };
 const GENUS_TEXT = { m: 'Maskulinum', f: 'Femininum', n: 'Neutrum' };
@@ -35,7 +36,7 @@ function formZeilen(vokabel) {
     .map(k => [abfrageLabel(vokabel.wortart, k), k === 'genus' ? genusText(formen[k]) : formen[k]]);
 }
 
-function ergebnisKarte({ vokabel, felder }) {
+function ergebnisKarte({ vokabel, felder, bestimmungen }) {
   const karte = element('div', 'karte nachschlagen-treffer');
 
   const kopf = element('div', 'nachschlagen-lemma', vokabel.lemma);
@@ -54,8 +55,13 @@ function ergebnisKarte({ vokabel, felder }) {
   if (vokabel.wichtig) herkunft.push('wichtiges Wort');
   karte.appendChild(element('p', 'hinweis', herkunft.join(' · ')));
 
+  // Gesucht war nicht die Grundform: zeigen, welche Form es ist.
   if (!felder.includes('lemma')) {
-    karte.appendChild(element('p', 'hinweis', `Gefunden als: ${felder.map(f => feldName(vokabel.wortart, f)).join(', ')}`));
+    if (bestimmungen?.length > 0) {
+      karte.appendChild(element('p', 'nachschlagen-bestimmung', `Bestimmung: ${bestimmungen.map(bestimmungText).join(' / ')}`));
+    } else if (felder.length > 0) {
+      karte.appendChild(element('p', 'hinweis', `Gefunden als: ${felder.map(f => feldName(vokabel.wortart, f)).join(', ')}`));
+    }
   }
 
   const tabelle = element('dl', 'nachschlagen-angaben');
