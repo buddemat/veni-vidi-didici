@@ -55,7 +55,20 @@ const KASUS_TEXT = { nom: 'Nom.', gen: 'Gen.', dat: 'Dat.', akk: 'Akk.', abl: 'A
 const NUMERUS_TEXT = { sg: 'Sg.', pl: 'Pl.' };
 
 export function bestimmungText(bestimmung) {
-  return `${KASUS_TEXT[bestimmung.kasus]} ${NUMERUS_TEXT[bestimmung.numerus]}`;
+  const text = `${KASUS_TEXT[bestimmung.kasus]} ${NUMERUS_TEXT[bestimmung.numerus]}`;
+  return bestimmung.genus ? `${text} ${bestimmung.genus}` : text;
+}
+
+// Mehrere Bestimmungen kompakt: gleiche Kasus/Numerus mit zusammengefassten
+// Genera, z.B. "Gen. Sg. m/f/n, Nom. Pl. m/f".
+export function bestimmungenText(bestimmungen) {
+  const gruppen = new Map();
+  for (const b of bestimmungen) {
+    const k = `${KASUS_TEXT[b.kasus]} ${NUMERUS_TEXT[b.numerus]}`;
+    if (!gruppen.has(k)) gruppen.set(k, []);
+    if (b.genus && !gruppen.get(k).includes(b.genus)) gruppen.get(k).push(b.genus);
+  }
+  return [...gruppen].map(([k, genera]) => (genera.length > 0 ? `${k} ${genera.join('/')}` : k)).join(', ');
 }
 
 // --- Substantive ---
@@ -221,10 +234,14 @@ function deklinierePhrase(nominativ, genitiv, neutrum, genitivPlural) {
 }
 
 // Formen aus dem Lern-Hinweis, z.B. "Abl. Sg. marī, Nom./Akk. Pl. maria",
-// "Nom. Pl. auch dī", "Akk. vim" (ohne Numerus: Singular). Ergänzt die
-// erzeugten Formen (ersetzt sie nicht).
+// "Nom./Akk. Pl. n vetera" (nur Neutrum), "Nom. Pl. auch dī", "Akk. vim"
+// (ohne Numerus: Singular). Sie ersetzen die erzeugte Form dieser Zelle
+// (das Buch nennt die abweichende Form), mit "auch" ergänzen sie sie.
 const KASUS_KUERZEL = { Nom: 'nom', Gen: 'gen', Dat: 'dat', Akk: 'akk', Abl: 'abl', Vok: 'vok' };
-const HINWEIS_FORM = /^((?:Nom|Gen|Dat|Akk|Abl|Vok)\.(?:\/(?:Nom|Gen|Dat|Akk|Abl|Vok)\.)*)\s*(?:(Sg|Pl)\.)?\s*(?:auch\s+)?(\p{L}+)$/u;
+const HINWEIS_FORM = new RegExp(
+  '^((?:Nom|Gen|Dat|Akk|Abl|Vok)\\.(?:\\/(?:Nom|Gen|Dat|Akk|Abl|Vok)\\.)*)\\s*(?:(Sg|Pl)\\.)?'
+  + '\\s*(?:([mfn])\\s+)?(auch\\s+)?(\\p{L}+)$', 'u',
+);
 
 export function hinweisFormen(hinweis) {
   if (!hinweis) return [];
@@ -234,17 +251,39 @@ export function hinweisFormen(hinweis) {
     if (!m) continue;
     const numerus = m[2] === 'Pl' ? 'pl' : 'sg';
     for (const k of m[1].split('/')) {
-      formen.push({ form: m[3], bestimmung: { kasus: KASUS_KUERZEL[k.replace('.', '')], numerus } });
+      const bestimmung = { kasus: KASUS_KUERZEL[k.replace('.', '')], numerus };
+      if (m[3]) bestimmung.genus = m[3];
+      formen.push({ form: m[5], bestimmung, auch: !!m[4] });
     }
   }
   return formen;
 }
 
-function paradigmaAlsListe(p) {
+// Hinweis-Formen einarbeiten: ersetzen die erzeugten Formen derselben
+// Zelle (ohne Genus-Angabe im Hinweis: in allen Genera), mit "auch" nur
+// ergänzend.
+function mitHinweisFormen(formen, hinweis) {
+  const hinweise = hinweisFormen(hinweis);
+  const ersetzt = h => f => f.bestimmung.kasus === h.bestimmung.kasus && f.bestimmung.numerus === h.bestimmung.numerus
+    && (!h.bestimmung.genus || f.bestimmung.genus === h.bestimmung.genus);
+  let ergebnis = formen;
+  for (const h of hinweise.filter(x => !x.auch)) ergebnis = ergebnis.filter(f => !ersetzt(h)(f));
+  // Hat das Wort Genera (Adjektiv), gilt eine Hinweis-Form ohne Genus für alle.
+  const genera = [...new Set(formen.map(f => f.bestimmung.genus).filter(Boolean))];
+  for (const { form, bestimmung } of hinweise) {
+    if (bestimmung.genus || genera.length === 0) ergebnis.push({ form, bestimmung });
+    else for (const genus of genera) ergebnis.push({ form, bestimmung: { ...bestimmung, genus } });
+  }
+  return ergebnis;
+}
+
+function paradigmaAlsListe(p, genus) {
   const liste = [];
   for (const numerus of ['sg', 'pl']) {
     for (const kasus of KASUS) {
-      for (const form of p[`${kasus}.${numerus}`] || []) liste.push({ form, bestimmung: { kasus, numerus } });
+      for (const form of p[`${kasus}.${numerus}`] || []) {
+        liste.push({ form, bestimmung: genus ? { kasus, numerus, genus } : { kasus, numerus } });
+      }
     }
   }
   return liste;
@@ -273,14 +312,153 @@ function substantivFormen(vokabel) {
       }
     }
   });
-  if (formen.length === 0) return [];
   return formen;
 }
+
+// --- Adjektive ---
+
+// Adjektiv der a-/o-Deklination: Maskulinum und Neutrum wie Substantive der
+// 2. Dekl., Femininum wie die 1. Dekl.; `neutrum` ist die Nom.-Sg.-Form
+// (meist -um, bei "alius" z.B. "aliud").
+function aoAdjektiv(m, stamm, neutrum, pronominal) {
+  const formen = [
+    ...paradigmaAlsListe(deklinierePaar(m, `${stamm}ī`, false), 'm'),
+    ...paradigmaAlsListe(deklinierePaar(`${stamm}a`, `${stamm}ae`, false), 'f'),
+    ...paradigmaAlsListe(deklinierePaar(`${stamm}um`, `${stamm}ī`, true), 'n'),
+  ];
+  let ergebnis = formen;
+  if (neutrum && !endetAuf(neutrum, 'um')) {
+    ergebnis = ergebnis.filter(f => !(f.bestimmung.genus === 'n' && f.bestimmung.numerus === 'sg'
+      && ['nom', 'akk'].includes(f.bestimmung.kasus)));
+    ergebnis.push({ form: neutrum, bestimmung: { kasus: 'nom', numerus: 'sg', genus: 'n' } });
+    ergebnis.push({ form: neutrum, bestimmung: { kasus: 'akk', numerus: 'sg', genus: 'n' } });
+  }
+  // Pronominale Adjektive (Gen. -īus, Dat. -ī in allen Genera).
+  if (pronominal) {
+    ergebnis = ergebnis.filter(f => !(f.bestimmung.numerus === 'sg' && ['gen', 'dat'].includes(f.bestimmung.kasus)));
+    for (const genus of ['m', 'f', 'n']) {
+      ergebnis.push({ form: `${stamm}īus`, bestimmung: { kasus: 'gen', numerus: 'sg', genus } });
+      ergebnis.push({ form: `${stamm}ī`, bestimmung: { kasus: 'dat', numerus: 'sg', genus } });
+    }
+  }
+  return ergebnis;
+}
+
+// Adjektiv der 3. Deklination. `nominative` je Genus, `stamm` aus Genitiv
+// oder Neutrum. i-Stamm (Normalfall): Abl. -ī, Gen. Pl. -ium, Neutrum Pl.
+// -ia; konsonantisch (Komparativ): Abl. -e, Gen. Pl. -um, Neutrum Pl. -a.
+function adjektiv3(nominative, stamm, iStamm) {
+  const formen = [];
+  for (const genus of ['m', 'f', 'n']) {
+    const p = {};
+    const neutrum = genus === 'n';
+    zelle(p, 'nom', 'sg', nominative[genus]);
+    zelle(p, 'gen', 'sg', `${stamm}is`);
+    zelle(p, 'dat', 'sg', `${stamm}ī`);
+    zelle(p, 'akk', 'sg', neutrum ? nominative.n : `${stamm}em`);
+    zelle(p, 'abl', 'sg', iStamm ? `${stamm}ī` : `${stamm}e`);
+    const nomPl = neutrum ? `${stamm}${iStamm ? 'ia' : 'a'}` : `${stamm}ēs`;
+    zelle(p, 'nom', 'pl', nomPl);
+    zelle(p, 'gen', 'pl', `${stamm}${iStamm ? 'ium' : 'um'}`);
+    zelle(p, 'dat', 'pl', `${stamm}ibus`);
+    zelle(p, 'akk', 'pl', nomPl);
+    zelle(p, 'abl', 'pl', `${stamm}ibus`);
+    formen.push(...paradigmaAlsListe(p, genus));
+  }
+  return formen;
+}
+
+function nurPlural(formen) {
+  return formen.filter(f => f.bestimmung.numerus === 'pl');
+}
+
+// Pronominale Adjektive (Gen. Sg. -īus, Dat. Sg. -ī in allen Genera) -
+// auch ohne Genitiv-Angabe im Wortschatz. "alius" hat Gen. "alterīus".
+const PRONOMINALE_ADJEKTIVE = ['unus', 'solus', 'totus', 'ullus', 'nullus', 'alius', 'alter', 'uter', 'neuter'];
+const PRONOMINAL_GENITIV = { alius: 'alterīus' };
+
+// Ermittelt aus Lemma (m), f-, n- und Genitiv-Angabe die Bildungsweise.
+// Gibt [] zurück, wenn keine passt.
+function adjektivFormenAus(m, f, n, genitiv) {
+  // Pluralwörter der a-/o-Dekl. ("-ī, -ae, -a"); ein Neutrum auf -um
+  // daneben ("-a/-um") ist zusätzlich Singular.
+  if (endetAuf(m, 'i') && f && endetAuf(f, 'ae')) {
+    const stamm = ohneEndung(f, 'ae');
+    const formen = nurPlural(aoAdjektiv(`${stamm}us`, stamm, null, false));
+    const neutrumSg = (n || []).find(x => endetAuf(x, 'um'));
+    if (neutrumSg) {
+      formen.push(...paradigmaAlsListe(deklinierePaar(neutrumSg, `${stamm}ī`, true), 'n')
+        .filter(x => x.bestimmung.numerus === 'sg'));
+    }
+    return formen;
+  }
+  const neutrum = n?.[0];
+  // a-/o-Deklination mit Femininum-Angabe.
+  if (f && endetAuf(f, 'a')) {
+    const pronominal = PRONOMINALE_ADJEKTIVE.includes(ohneMakrons(m));
+    const formen = aoAdjektiv(m, ohneEndung(f, 'a'), neutrum, pronominal);
+    const genitivSonder = PRONOMINAL_GENITIV[ohneMakrons(m)];
+    if (!genitivSonder) return formen;
+    return [
+      ...formen.filter(x => !(x.bestimmung.kasus === 'gen' && x.bestimmung.numerus === 'sg')),
+      ...['m', 'f', 'n'].map(genus => ({ form: genitivSonder, bestimmung: { kasus: 'gen', numerus: 'sg', genus } })),
+    ];
+  }
+  // Pronominal ("-us", Gen. "-īus") oder ganz ohne f/n-Angabe ("-us").
+  if (!f && !neutrum && endetAuf(m, 'us')) {
+    if (genitiv && endetAuf(genitiv, 'ius')) return aoAdjektiv(m, ohneEndung(genitiv, 'īus'), null, true);
+    if (!genitiv) return aoAdjektiv(m, ohneEndung(m, 'us'), null, false);
+  }
+  // Dreiendig ("ācer, ācris, ācre") und zweiendig ("-is, -e").
+  if (neutrum && endetAuf(neutrum, 'e') && (endetAuf(m, 'is') || (f && endetAuf(f, 'is')))) {
+    const stamm = ohneEndung(neutrum, 'e');
+    return adjektiv3({ m, f: f || m, n: neutrum }, stamm, true);
+  }
+  // Komparativ ("-ior, -ius").
+  if (neutrum && endetAuf(m, 'ior') && endetAuf(neutrum, 'ius')) {
+    return adjektiv3({ m, f: m, n: neutrum }, `${ohneEndung(m, 'or')}ōr`, false);
+  }
+  // Einendig mit Genitiv ("-ns, -ntis").
+  if (genitiv && endetAuf(genitiv, 'is')) {
+    return adjektiv3({ m, f: m, n: m }, ohneEndung(genitiv, 'is'), true);
+  }
+  // Pluralwörter der 3. Dekl. ("-ēs", Gen. "-ium"): ohne den unsicheren
+  // Neutrum-Nominativ/Akkusativ.
+  if (genitiv && endetAuf(m, 'es') && endetAuf(genitiv, 'ium')) {
+    const stamm = ohneEndung(genitiv, 'ium');
+    return nurPlural(adjektiv3({ m, f: m, n: m }, stamm, true))
+      .filter(x => !(x.bestimmung.genus === 'n' && ['nom', 'akk'].includes(x.bestimmung.kasus)));
+  }
+  return [];
+}
+
+// Angehängtes "-que" (an allen Formen): abtrennen, deklinieren, anhängen.
+function adjektivFormen(vokabel) {
+  const fo = vokabel.formen || {};
+  const teile = varianten(vokabel.lemma);
+  if (teile.length !== 1) return [];
+  // "m, f, n" direkt im Lemma.
+  let [m, fText, nText] = teile[0].split(/\s*,\s*/);
+  fText = fText ?? fo.f;
+  nText = nText ?? fo.n;
+  // Mehrere Schreibweisen ("dext(e)ra") je für sich.
+  const fVarianten = fText ? varianten(fText) : [null];
+  const n = nText ? String(nText).split('/').flatMap(varianten) : null;
+  const genitiv = fo.genitiv ? varianten(fo.genitiv)[0] : null;
+  if (!m || m.includes(' ')) return [];
+
+  const que = endetAuf(m, 'que') && fVarianten.every(f => !f || endetAuf(f, 'que'));
+  const ohneQue = t => (t && que ? ohneEndung(t, 'que') : t);
+  const formen = fVarianten.flatMap(f => adjektivFormenAus(ohneQue(m), ohneQue(f), n?.map(ohneQue), ohneQue(genitiv)));
+  return que ? formen.map(x => ({ ...x, form: `${x.form}que` })) : formen;
+}
+
+// --- Gesamt ---
 
 function ohneDoppelte(formen) {
   const gesehen = new Set();
   return formen.filter(({ form, bestimmung }) => {
-    const schluessel = `${form}|${JSON.stringify(bestimmung)}`;
+    const schluessel = `${form}|${bestimmung.kasus}|${bestimmung.numerus}|${bestimmung.genus || ''}`;
     if (gesehen.has(schluessel)) return false;
     gesehen.add(schluessel);
     return true;
@@ -290,8 +468,9 @@ function ohneDoppelte(formen) {
 // Alle Formen einer Vokabel als [{ form, bestimmung }] - leer, wenn sich
 // (noch) nichts ableiten lässt.
 export function bildeFormen(vokabel) {
-  if (vokabel.wortart === 'substantiv') {
-    return ohneDoppelte([...substantivFormen(vokabel), ...hinweisFormen(vokabel.hinweis)]);
-  }
-  return [];
+  let formen;
+  if (vokabel.wortart === 'substantiv') formen = substantivFormen(vokabel);
+  else if (vokabel.wortart === 'adjektiv') formen = adjektivFormen(vokabel);
+  else return [];
+  return ohneDoppelte(mitHinweisFormen(formen, vokabel.hinweis));
 }

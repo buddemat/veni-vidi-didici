@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bildeFormen, bestimmungText, hinweisFormen, klammerVarianten } from '../www/js/formen.js';
+import { bildeFormen, bestimmungText, bestimmungenText, hinweisFormen, klammerVarianten } from '../www/js/formen.js';
 import { sucheVokabeln } from '../www/js/suche.js';
 
 // Beispiel- bzw. erfundene Einträge (keine Buchinhalte, PLAN.md Punkt 35).
@@ -93,16 +93,17 @@ test('mehrteiliges Lemma: Wörter einzeln dekliniert und zusammengesetzt', () =>
   assert.equal(t['Gen. Pl.'], 'rosārum albārum');
 });
 
-test('Formen aus dem Hinweis ergänzen die erzeugten', () => {
-  assert.deepEqual(hinweisFormen('Abl. Sg. flōrī, Nom./Akk. Pl. flōra; Nom. Pl. auch flī; Akk. vim; Pluralwort'), [
-    { form: 'flōrī', bestimmung: { kasus: 'abl', numerus: 'sg' } },
-    { form: 'flōra', bestimmung: { kasus: 'nom', numerus: 'pl' } },
-    { form: 'flōra', bestimmung: { kasus: 'akk', numerus: 'pl' } },
-    { form: 'flī', bestimmung: { kasus: 'nom', numerus: 'pl' } },
-    { form: 'vim', bestimmung: { kasus: 'akk', numerus: 'sg' } },
+test('Formen aus dem Hinweis ersetzen die erzeugten, mit "auch" ergänzen sie', () => {
+  assert.deepEqual(hinweisFormen('Abl. Sg. flōrī, Nom./Akk. Pl. n flōra; Nom. Pl. auch flī; Akk. vim; Pluralwort'), [
+    { form: 'flōrī', bestimmung: { kasus: 'abl', numerus: 'sg' }, auch: false },
+    { form: 'flōra', bestimmung: { kasus: 'nom', numerus: 'pl', genus: 'n' }, auch: false },
+    { form: 'flōra', bestimmung: { kasus: 'akk', numerus: 'pl', genus: 'n' }, auch: false },
+    { form: 'flī', bestimmung: { kasus: 'nom', numerus: 'pl' }, auch: true },
+    { form: 'vim', bestimmung: { kasus: 'akk', numerus: 'sg' }, auch: false },
   ]);
-  const t = tabelle(substantiv('flōs', 'flōris', 'm', { hinweis: 'Abl. Sg. flōrī' }));
-  assert.equal(t['Abl. Sg.'], 'flōre/flōrī');
+  const t = tabelle(substantiv('flōs', 'flōris', 'm', { hinweis: 'Abl. Sg. flōrī; Nom. Pl. auch flī' }));
+  assert.equal(t['Abl. Sg.'], 'flōrī');
+  assert.equal(t['Nom. Pl.'], 'flōrēs/flī');
   // Ohne Genitiv nur die Formen aus dem Hinweis.
   assert.deepEqual(tabelle(substantiv('grax', undefined, 'f', { hinweis: 'Akk. gracem' })), { 'Akk. Sg.': 'gracem' });
 });
@@ -142,4 +143,84 @@ test('Pluralwort der 3. Dekl. mit Genitiv auf -orum (Neutrum)', () => {
   const t = tabelle(substantiv('tempora', 'temporum', 'n'));
   assert.equal(t['Dat. Pl.'], 'temporibus');
   assert.equal(t['Akk. Pl.'], 'tempora');
+});
+
+// --- Adjektive ---
+
+function adjektiv(lemma, formen = {}, hinweis) {
+  return { id: 'X', wortart: 'adjektiv', lemma, formen, bedeutungen: [], hinweis };
+}
+
+test('Adjektiv a-/o-Dekl.: alle drei Genera, Vokativ m', () => {
+  const t = tabelle(adjektiv('stultus', { f: 'stulta', n: 'stultum' }));
+  assert.equal(t['Gen. Sg. m'], 'stultī');
+  assert.equal(t['Vok. Sg. m'], 'stulte');
+  assert.equal(t['Akk. Sg. f'], 'stultam');
+  assert.equal(t['Abl. Sg. f'], 'stultā');
+  assert.equal(t['Akk. Sg. n'], 'stultum');
+  assert.equal(t['Nom. Pl. n'], 'stulta');
+  assert.equal(t['Gen. Pl. f'], 'stultārum');
+  assert.equal(t['Dat. Pl. m'], 'stultīs');
+  // -er mit und ohne e im Stamm, beide Schreibweisen.
+  const niger = tabelle(adjektiv('niger', { f: 'nig(e)ra', n: 'nig(e)rum' }));
+  assert.equal(niger['Gen. Sg. m'], 'nigerī/nigrī');
+  assert.equal(niger['Vok. Sg. m'], undefined);
+});
+
+test('Adjektiv a-/o-Dekl. ohne f/n-Angabe und pronominal', () => {
+  assert.equal(tabelle(adjektiv('glaucus (m. Abl.)'))['Akk. Sg. f'], 'glaucam');
+  const neuter = tabelle(adjektiv('neuter', { f: 'neutra', n: 'neutrum' }));
+  assert.equal(neuter['Gen. Sg. f'], 'neutrīus');
+  assert.equal(neuter['Dat. Sg. m'], 'neutrī');
+  assert.equal(neuter['Akk. Sg. f'], 'neutram');
+  // Genitiv-Angabe auf -īus macht ein Adjektiv ohne f/n pronominal.
+  assert.equal(tabelle(adjektiv('glaucus', { genitiv: 'glaucīus' }))['Dat. Sg. f'], 'glaucī');
+});
+
+test('Adjektiv 3. Dekl.: drei-, zwei-, einendig, Komparativ', () => {
+  const alacer = tabelle(adjektiv('alacer', { f: 'alacris', n: 'alacre' }));
+  assert.equal(alacer['Nom. Sg. f'], 'alacris');
+  assert.equal(alacer['Abl. Sg. m'], 'alacrī');
+  assert.equal(alacer['Nom. Pl. n'], 'alacria');
+  assert.equal(alacer['Gen. Pl. f'], 'alacrium');
+
+  const tristis = tabelle(adjektiv('tristis', { n: 'triste' }));
+  assert.equal(tristis['Nom. Sg. f'], 'tristis');
+  assert.equal(tristis['Akk. Sg. m'], 'tristem');
+  assert.equal(tristis['Akk. Sg. n'], 'triste');
+
+  const audax = tabelle(adjektiv('audāx', { genitiv: 'audācis' }));
+  assert.equal(audax['Nom. Sg. n'], 'audāx');
+  assert.equal(audax['Akk. Sg. m'], 'audācem');
+  assert.equal(audax['Nom. Pl. n'], 'audācia');
+
+  const durior = tabelle(adjektiv('dūrior', { n: 'dūrius' }));
+  assert.equal(durior['Gen. Sg. m'], 'dūriōris');
+  assert.equal(durior['Abl. Sg. f'], 'dūriōre');
+  assert.equal(durior['Nom. Pl. n'], 'dūriōra');
+  assert.equal(durior['Gen. Pl. m'], 'dūriōrum');
+  // "m, f, n" im Lemma.
+  assert.equal(tabelle(adjektiv('dūrior, dūrior, dūrius'))['Akk. Sg. n'], 'dūrius');
+});
+
+test('Adjektiv: Pluralwörter, -que, Hinweis-Formen mit Genus', () => {
+  const glauci = tabelle(adjektiv('glaucī', { f: 'glaucae', n: 'glauca/glaucum' }));
+  assert.equal(glauci['Akk. Pl. f'], 'glaucās');
+  assert.equal(glauci['Nom. Sg. m'], undefined);
+  assert.equal(glauci['Abl. Sg. n'], 'glaucō');
+
+  const que = tabelle(adjektiv('glaucīque', { f: 'glaucaeque', n: 'glaucaque' }));
+  assert.equal(que['Gen. Pl. m'], 'glaucōrumque');
+
+  const t = tabelle(adjektiv('audāx', { genitiv: 'audācis' }, 'Abl. Sg. audāce, Nom./Akk. Pl. n audāca, Gen. Pl. audācum'));
+  assert.equal(t['Abl. Sg. m'], 'audāce');
+  assert.equal(t['Nom. Pl. n'], 'audāca');
+  assert.equal(t['Nom. Pl. m'], 'audācēs');
+  assert.equal(t['Gen. Pl. f'], 'audācum');
+});
+
+test('bestimmungenText: Genera zusammengefasst', () => {
+  const treffer = sucheVokabeln({ A: { ...adjektiv('tristis', { n: 'triste' }), id: 'A' } }, 'tristibus');
+  assert.equal(bestimmungenText(treffer[0].bestimmungen), 'Dat. Pl. m/f/n, Abl. Pl. m/f/n');
+  assert.equal(bestimmungenText([{ kasus: 'gen', numerus: 'sg' }, { kasus: 'nom', numerus: 'pl' }]), 'Gen. Sg., Nom. Pl.');
 });

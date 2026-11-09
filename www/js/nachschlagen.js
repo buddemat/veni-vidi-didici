@@ -6,7 +6,7 @@ import { feldDefinitionenFuer, abfrageLabel } from './einstellungen.js';
 import { eingabeFokussieren } from './spracheingabe.js';
 import { hatAudio, spieleAudio, stoppeAudio } from './audio.js';
 import { sucheErweitert } from './suche.js';
-import { bestimmungText } from './formen.js';
+import { bestimmungenText } from './formen.js';
 
 const WORTART_TEXT = { substantiv: 'Substantiv', verb: 'Verb', adjektiv: 'Adjektiv', sonstiges: 'Sonstiges' };
 const GENUS_TEXT = { m: 'Maskulinum', f: 'Femininum', n: 'Neutrum' };
@@ -58,7 +58,7 @@ function ergebnisKarte({ vokabel, felder, bestimmungen }) {
   // Gesucht war nicht die Grundform: zeigen, welche Form es ist.
   if (!felder.includes('lemma')) {
     if (bestimmungen?.length > 0) {
-      karte.appendChild(element('p', 'nachschlagen-bestimmung', `Bestimmung: ${bestimmungen.map(bestimmungText).join(' / ')}`));
+      karte.appendChild(element('p', 'nachschlagen-bestimmung', `Bestimmung: ${bestimmungenText(bestimmungen)}`));
     } else if (felder.length > 0) {
       karte.appendChild(element('p', 'hinweis', `Gefunden als: ${felder.map(f => feldName(vokabel.wortart, f)).join(', ')}`));
     }
