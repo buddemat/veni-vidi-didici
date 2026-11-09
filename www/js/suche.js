@@ -109,6 +109,16 @@ function gebeugteFormen(vokabel) {
   return formen;
 }
 
+// Erzeugt die gebeugten Formen aller Vokabeln vorab (beim Öffnen des
+// Nachschlagen-Screens), damit nicht die erste Eingabe darauf wartet -
+// das Erzeugen aller Formen dauert auf dem Handy merklich.
+export function bereiteSucheVor(vokabeln) {
+  for (const vokabel of Object.values(vokabeln)) {
+    gebeugteFormen(vokabel);
+    feldSchluessel(vokabel);
+  }
+}
+
 // Exakte Suche (siehe oben): Lemma oder eine der angegebenen Formen, dazu
 // die gebeugten Formen. Passt die Eingabe zu einer gebeugten Form, bekommt
 // der Treffer `bestimmungen` (z.B. Gen. Sg. und Nom. Pl.). Treffer über

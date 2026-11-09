@@ -224,3 +224,97 @@ test('bestimmungenText: Genera zusammengefasst', () => {
   assert.equal(bestimmungenText(treffer[0].bestimmungen), 'Dat. Pl. m/f/n, Abl. Pl. m/f/n');
   assert.equal(bestimmungenText([{ kasus: 'gen', numerus: 'sg' }, { kasus: 'nom', numerus: 'pl' }]), 'Gen. Sg., Nom. Pl.');
 });
+
+// --- Verben ---
+
+function verb(lemma, formen, hinweis) {
+  return { id: 'X', wortart: 'verb', lemma, formen, bedeutungen: [], hinweis };
+}
+
+// Formen einer Bestimmung (z.B. '2. Sg. Präs. Ind. Akt.') bzw. alle sechs
+// Personen eines Tempus als Liste.
+const personen = (t, rest) => ['1. Sg.', '2. Sg.', '3. Sg.', '1. Pl.', '2. Pl.', '3. Pl.'].map(p => t[`${p} ${rest}`]);
+
+test('a-Konjugation: Präsens-, Perfektstamm, Passiv, Infinitive, Imperativ', () => {
+  const t = tabelle(verb('saltāre', { praesens_1sg: 'saltō', perfekt_1sg: 'saltāvī', ppp: 'saltātum' }));
+  assert.deepEqual(personen(t, 'Präs. Ind. Akt.'), ['saltō', 'saltās', 'saltat', 'saltāmus', 'saltātis', 'saltant']);
+  assert.deepEqual(personen(t, 'Impf. Ind. Akt.'), ['saltābam', 'saltābās', 'saltābat', 'saltābāmus', 'saltābātis', 'saltābant']);
+  assert.deepEqual(personen(t, 'Fut. I Ind. Akt.'), ['saltābō', 'saltābis', 'saltābit', 'saltābimus', 'saltābitis', 'saltābunt']);
+  assert.deepEqual(personen(t, 'Präs. Ind. Pass.'), ['saltor', 'saltāris', 'saltātur', 'saltāmur', 'saltāminī', 'saltantur']);
+  assert.deepEqual(personen(t, 'Impf. Ind. Pass.'), ['saltābar', 'saltābāris', 'saltābātur', 'saltābāmur', 'saltābāminī', 'saltābantur']);
+  assert.deepEqual(personen(t, 'Fut. I Ind. Pass.'), ['saltābor', 'saltāberis', 'saltābitur', 'saltābimur', 'saltābiminī', 'saltābuntur']);
+  assert.deepEqual(personen(t, 'Perf. Ind. Akt.'), ['saltāvī', 'saltāvistī', 'saltāvit', 'saltāvimus', 'saltāvistis', 'saltāvērunt']);
+  assert.deepEqual(personen(t, 'Plqpf. Ind. Akt.'), ['saltāveram', 'saltāverās', 'saltāverat', 'saltāverāmus', 'saltāverātis', 'saltāverant']);
+  assert.deepEqual(personen(t, 'Fut. II Ind. Akt.'), ['saltāverō', 'saltāveris', 'saltāverit', 'saltāverimus', 'saltāveritis', 'saltāverint']);
+  assert.equal(t['3. Sg. Perf. Ind. Pass.'], 'saltātus est/saltāta est/saltātum est');
+  assert.equal(t['1. Pl. Plqpf. Ind. Pass.'], 'saltātī erāmus/saltātae erāmus/saltāta erāmus');
+  assert.equal(t['Inf. Präs. Akt.'], 'saltāre');
+  assert.equal(t['Inf. Präs. Pass.'], 'saltārī');
+  assert.equal(t['Inf. Perf. Akt.'], 'saltāvisse');
+  assert.equal(t['Imp. Sg.'], 'saltā');
+  assert.equal(t['Imp. Pl.'], 'saltāte');
+});
+
+test('e-, konsonantische, kurzvokalische i- und i-Konjugation', () => {
+  const e = tabelle(verb('vidēre', { praesens_1sg: 'videō', perfekt_1sg: 'vīdī', ppp: 'vīsum' }));
+  assert.deepEqual(personen(e, 'Präs. Ind. Akt.'), ['videō', 'vidēs', 'videt', 'vidēmus', 'vidētis', 'vident']);
+  assert.deepEqual(personen(e, 'Fut. I Ind. Akt.'), ['vidēbō', 'vidēbis', 'vidēbit', 'vidēbimus', 'vidēbitis', 'vidēbunt']);
+  assert.equal(e['Inf. Präs. Pass.'], 'vidērī');
+  assert.equal(e['Imp. Sg.'], 'vidē');
+
+  const k = tabelle(verb('discere', { praesens_1sg: 'discō', perfekt_1sg: 'didicī' }));
+  assert.deepEqual(personen(k, 'Präs. Ind. Akt.'), ['discō', 'discis', 'discit', 'discimus', 'discitis', 'discunt']);
+  assert.deepEqual(personen(k, 'Fut. I Ind. Akt.'), ['discam', 'discēs', 'discet', 'discēmus', 'discētis', 'discent']);
+  assert.deepEqual(personen(k, 'Präs. Ind. Pass.'), ['discor', 'disceris', 'discitur', 'discimur', 'disciminī', 'discuntur']);
+  assert.equal(k['Inf. Präs. Pass.'], 'discī');
+  assert.equal(k['Imp. Pl.'], 'discite');
+  // Ohne PPP kein Perfekt passiv.
+  assert.equal(k['3. Sg. Perf. Ind. Pass.'], undefined);
+
+  const io = tabelle(verb('fodere', { praesens_1sg: 'fodiō', perfekt_1sg: 'fōdī' }));
+  assert.deepEqual(personen(io, 'Präs. Ind. Akt.'), ['fodiō', 'fodis', 'fodit', 'fodimus', 'foditis', 'fodiunt']);
+  assert.deepEqual(personen(io, 'Impf. Ind. Akt.'), ['fodiēbam', 'fodiēbās', 'fodiēbat', 'fodiēbāmus', 'fodiēbātis', 'fodiēbant']);
+  assert.equal(io['1. Sg. Fut. I Ind. Akt.'], 'fodiam');
+  assert.equal(io['Imp. Sg.'], 'fode');
+
+  const i = tabelle(verb('venīre', { praesens_1sg: 'veniō', perfekt_1sg: 'vēnī' }));
+  assert.deepEqual(personen(i, 'Präs. Ind. Akt.'), ['veniō', 'venīs', 'venit', 'venīmus', 'venītis', 'veniunt']);
+  assert.equal(i['3. Pl. Fut. I Ind. Akt.'], 'venient');
+  assert.equal(i['Inf. Präs. Pass.'], 'venīrī');
+  assert.equal(i['Imp. Pl.'], 'venīte');
+  // "venit" ist Präsens und Perfekt (ohne Makrons gleich).
+  assert.equal(i['3. Sg. Perf. Ind. Akt.'], 'vēnit');
+});
+
+test('Deponentien: Passivformen ohne Genus verbi, Perfekt mit Partizip', () => {
+  const t = tabelle(verb('minārī', { praesens_1sg: 'minor', perfekt_1sg: 'minātus sum' }, 'Deponens'));
+  assert.deepEqual(personen(t, 'Präs. Ind.'), ['minor', 'mināris', 'minātur', 'mināmur', 'mināminī', 'minantur']);
+  assert.equal(t['2. Sg. Fut. I Ind.'], 'mināberis');
+  assert.equal(t['3. Pl. Perf. Ind.'], 'minātī sunt/minātae sunt/mināta sunt');
+  assert.equal(t['Inf. Präs.'], 'minārī');
+  assert.equal(t['Imp. Sg.'], 'mināre');
+  assert.equal(t['Imp. Pl.'], 'mināminī');
+  assert.equal(t['1. Sg. Präs. Ind. Akt.'], undefined);
+
+  const io = tabelle(verb('lābī', { praesens_1sg: 'lābor', perfekt_1sg: 'lāpsus sum' }));
+  assert.equal(io['3. Pl. Präs. Ind.'], 'lābuntur');
+  assert.equal(io['1. Sg. Fut. I Ind.'], 'lābar');
+});
+
+test('gespeicherter Imperativ, Anmerkungen, fehlende Angaben', () => {
+  const t = tabelle(verb('(sē) sculpere (m. Akk.)', { praesens_1sg: 'sculpō (m. Akk.)', imperativ_sg: 'sculp' }));
+  assert.equal(t['Imp. Sg.'], 'sculp');
+  assert.equal(t['Inf. Präs. Akt.'], 'sculpere');
+  assert.equal(t['3. Sg. Perf. Ind. Akt.'], undefined);
+  // Unregelmäßiges Präsens (Stufe 4): nur das Perfekt.
+  const esse = tabelle(verb('esse', { praesens_1sg: 'sum', perfekt_1sg: 'fuī' }));
+  assert.equal(esse['1. Sg. Präs. Ind. Akt.'], undefined);
+  assert.equal(esse['3. Pl. Perf. Ind. Akt.'], 'fuērunt');
+});
+
+test('Suche findet Verbformen mit Bestimmung, mehrdeutig zusammengefasst', () => {
+  const vokabeln = { A: { ...verb('venīre', { praesens_1sg: 'veniō', perfekt_1sg: 'vēnī' }), id: 'A' } };
+  assert.equal(bestimmungenText(sucheVokabeln(vokabeln, 'venit')[0].bestimmungen),
+    '3. Sg. Präs. Ind. Akt., 3. Sg. Perf. Ind. Akt.');
+  assert.equal(bestimmungenText(sucheVokabeln(vokabeln, 'veniebamini')[0].bestimmungen), '2. Pl. Impf. Ind. Pass.');
+});

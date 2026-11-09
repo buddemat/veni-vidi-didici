@@ -6,7 +6,7 @@
 // Reicht die Angabe nicht für eine eindeutige Zuordnung, gibt es lieber gar
 // keine Formen als falsche.
 //
-// Stufe 1: Substantive.
+// Stufe 1-3: Substantive, Adjektive, Verben (ohne unregelmäßige Präsensformen).
 
 // Klammern: an ein Wort angehängte Buchstaben sind optional ("caerul(e)a" ->
 // "caerulea" und "caerula"); alles andere ist eine Anmerkung und fällt weg
@@ -54,7 +54,20 @@ export const KASUS = ['nom', 'gen', 'dat', 'akk', 'abl', 'vok'];
 const KASUS_TEXT = { nom: 'Nom.', gen: 'Gen.', dat: 'Dat.', akk: 'Akk.', abl: 'Abl.', vok: 'Vok.' };
 const NUMERUS_TEXT = { sg: 'Sg.', pl: 'Pl.' };
 
+const TEMPUS_TEXT = { praes: 'Präs.', impf: 'Impf.', fut1: 'Fut. I', perf: 'Perf.', plqpf: 'Plqpf.', fut2: 'Fut. II' };
+const GENUS_VERBI_TEXT = { akt: 'Akt.', pass: 'Pass.' };
+
+// Verbformen: "3. Sg. Impf. Ind. Akt.", "Inf. Perf. Pass.", "Imp. Pl.";
+// bei Deponentien ohne Genus verbi.
+function verbBestimmungText(b) {
+  const genusVerbi = b.genusVerbi ? ` ${GENUS_VERBI_TEXT[b.genusVerbi]}` : '';
+  if (b.modus === 'imp') return `Imp. ${NUMERUS_TEXT[b.numerus]}`;
+  if (b.modus === 'inf') return `Inf. ${TEMPUS_TEXT[b.tempus]}${genusVerbi}`;
+  return `${b.person}. ${NUMERUS_TEXT[b.numerus]} ${TEMPUS_TEXT[b.tempus]} Ind.${genusVerbi}`;
+}
+
 export function bestimmungText(bestimmung) {
+  if (!bestimmung.kasus) return verbBestimmungText(bestimmung);
   const text = `${KASUS_TEXT[bestimmung.kasus]} ${NUMERUS_TEXT[bestimmung.numerus]}`;
   return bestimmung.genus ? `${text} ${bestimmung.genus}` : text;
 }
@@ -64,7 +77,7 @@ export function bestimmungText(bestimmung) {
 export function bestimmungenText(bestimmungen) {
   const gruppen = new Map();
   for (const b of bestimmungen) {
-    const k = `${KASUS_TEXT[b.kasus]} ${NUMERUS_TEXT[b.numerus]}`;
+    const k = b.kasus ? `${KASUS_TEXT[b.kasus]} ${NUMERUS_TEXT[b.numerus]}` : verbBestimmungText(b);
     if (!gruppen.has(k)) gruppen.set(k, []);
     if (b.genus && !gruppen.get(k).includes(b.genus)) gruppen.get(k).push(b.genus);
   }
@@ -453,12 +466,182 @@ function adjektivFormen(vokabel) {
   return que ? formen.map(x => ({ ...x, form: `${x.form}que` })) : formen;
 }
 
+// --- Verben ---
+
+const PERSONEN = [[1, 'sg'], [2, 'sg'], [3, 'sg'], [1, 'pl'], [2, 'pl'], [3, 'pl']];
+
+// Endungen je Konjugation, an die Wurzel (1. Sg. ohne -ō/-eō/-iō bzw.
+// -or/-eor/-ior) angehängt. impf: Bindevokal + b, dann die Endungen
+// IMPF_AKT/IMPF_PASS.
+const KONJUGATION = {
+  1: {
+    praes: ['ō', 'ās', 'at', 'āmus', 'ātis', 'ant'], praesPass: ['or', 'āris', 'ātur', 'āmur', 'āminī', 'antur'],
+    impf: 'āb', fut: ['ābō', 'ābis', 'ābit', 'ābimus', 'ābitis', 'ābunt'],
+    futPass: ['ābor', 'āberis', 'ābitur', 'ābimur', 'ābiminī', 'ābuntur'], infPass: 'ārī', imp: ['ā', 'āte'], impDep: 'āre',
+  },
+  2: {
+    praes: ['eō', 'ēs', 'et', 'ēmus', 'ētis', 'ent'], praesPass: ['eor', 'ēris', 'ētur', 'ēmur', 'ēminī', 'entur'],
+    impf: 'ēb', fut: ['ēbō', 'ēbis', 'ēbit', 'ēbimus', 'ēbitis', 'ēbunt'],
+    futPass: ['ēbor', 'ēberis', 'ēbitur', 'ēbimur', 'ēbiminī', 'ēbuntur'], infPass: 'ērī', imp: ['ē', 'ēte'], impDep: 'ēre',
+  },
+  3: {
+    praes: ['ō', 'is', 'it', 'imus', 'itis', 'unt'], praesPass: ['or', 'eris', 'itur', 'imur', 'iminī', 'untur'],
+    impf: 'ēb', fut: ['am', 'ēs', 'et', 'ēmus', 'ētis', 'ent'],
+    futPass: ['ar', 'ēris', 'ētur', 'ēmur', 'ēminī', 'entur'], infPass: 'ī', imp: ['e', 'ite'], impDep: 'ere',
+  },
+  '3io': {
+    praes: ['iō', 'is', 'it', 'imus', 'itis', 'iunt'], praesPass: ['ior', 'eris', 'itur', 'imur', 'iminī', 'iuntur'],
+    impf: 'iēb', fut: ['iam', 'iēs', 'iet', 'iēmus', 'iētis', 'ient'],
+    futPass: ['iar', 'iēris', 'iētur', 'iēmur', 'iēminī', 'ientur'], infPass: 'ī', imp: ['e', 'ite'], impDep: 'ere',
+  },
+  4: {
+    praes: ['iō', 'īs', 'it', 'īmus', 'ītis', 'iunt'], praesPass: ['ior', 'īris', 'ītur', 'īmur', 'īminī', 'iuntur'],
+    impf: 'iēb', fut: ['iam', 'iēs', 'iet', 'iēmus', 'iētis', 'ient'],
+    futPass: ['iar', 'iēris', 'iētur', 'iēmur', 'iēminī', 'ientur'], infPass: 'īrī', imp: ['ī', 'īte'], impDep: 'īre',
+  },
+};
+const IMPF_AKT = ['am', 'ās', 'at', 'āmus', 'ātis', 'ant'];
+const IMPF_PASS = ['ar', 'āris', 'ātur', 'āmur', 'āminī', 'antur'];
+const PERF_AKT = ['ī', 'istī', 'it', 'imus', 'istis', 'ērunt'];
+const PLQPF_AKT = ['eram', 'erās', 'erat', 'erāmus', 'erātis', 'erant'];
+const FUT2_AKT = ['erō', 'eris', 'erit', 'erimus', 'eritis', 'erint'];
+const ESSE = {
+  perf: ['sum', 'es', 'est', 'sumus', 'estis', 'sunt'],
+  plqpf: ['eram', 'erās', 'erat', 'erāmus', 'erātis', 'erant'],
+  fut2: ['erō', 'eris', 'erit', 'erimus', 'eritis', 'erunt'],
+};
+
+// Konjugation aus Infinitiv (Lemma) und 1. Sg. - ohne Makrons verglichen,
+// die Endung der 1. Sg. entscheidet zwischen 2. und 3. Konjugation.
+// Unregelmäßige (esse, īre, ferre, velle, fierī, ...) passen auf keine
+// Regel und bekommen hier keine Präsensformen (Stufe 4).
+function konjugation(infinitiv, praesens) {
+  const inf = ohneMakrons(infinitiv);
+  const p = ohneMakrons(praesens);
+  const regeln = [
+    // [1. Sg., Infinitiv, Konjugation, Endung der 1. Sg., Deponens]
+    ['eor', 'eri', 2, 'eor', true], ['ior', 'iri', 4, 'ior', true], ['ior', 'i', '3io', 'ior', true],
+    ['or', 'ari', 1, 'or', true], ['or', 'i', 3, 'or', true],
+    ['eo', 'ere', 2, 'eō', false], ['io', 'ire', 4, 'iō', false], ['io', 'ere', '3io', 'iō', false],
+    ['o', 'are', 1, 'ō', false], ['o', 'ere', 3, 'ō', false],
+  ];
+  for (const [pEnd, infEnd, konj, endung, deponens] of regeln) {
+    if (p.endsWith(pEnd) && inf.endsWith(infEnd)) {
+      const wurzel = ohneEndung(praesens, endung);
+      return wurzel ? { konj, wurzel, deponens } : null;
+    }
+  }
+  return null;
+}
+
+function verbForm(form, bestimmung) {
+  return { form, bestimmung };
+}
+
+function personenFormen(stamm, endungen, tempus, genusVerbi) {
+  return PERSONEN.map(([person, numerus], i) => verbForm(
+    stamm + endungen[i],
+    { person, numerus, tempus, modus: 'ind', ...(genusVerbi ? { genusVerbi } : {}) },
+  ));
+}
+
+function praesensSystem(infinitiv, { konj, wurzel, deponens }, imperativSg) {
+  const k = KONJUGATION[konj];
+  const formen = [];
+  // Deponentien: Passivformen, aber ohne Angabe des Genus verbi.
+  const akt = deponens ? null : 'akt';
+  const pass = deponens ? null : 'pass';
+  if (!deponens) {
+    formen.push(...personenFormen(wurzel, k.praes, 'praes', akt));
+    formen.push(...personenFormen(wurzel + k.impf, IMPF_AKT, 'impf', akt));
+    formen.push(...personenFormen(wurzel, k.fut, 'fut1', akt));
+    formen.push(verbForm(infinitiv, { modus: 'inf', tempus: 'praes', genusVerbi: 'akt' }));
+    const [impSg, impPl] = k.imp;
+    for (const form of imperativSg || [wurzel + impSg]) formen.push(verbForm(form, { modus: 'imp', numerus: 'sg' }));
+    formen.push(verbForm(wurzel + impPl, { modus: 'imp', numerus: 'pl' }));
+  }
+  formen.push(...personenFormen(wurzel, k.praesPass, 'praes', pass));
+  formen.push(...personenFormen(wurzel + k.impf, IMPF_PASS, 'impf', pass));
+  formen.push(...personenFormen(wurzel, k.futPass, 'fut1', pass));
+  formen.push(verbForm(deponens ? infinitiv : wurzel + k.infPass, { modus: 'inf', tempus: 'praes', ...(pass ? { genusVerbi: pass } : {}) }));
+  if (deponens) {
+    formen.push(verbForm(wurzel + k.impDep, { modus: 'imp', numerus: 'sg' }));
+    formen.push(verbForm(wurzel + k.praesPass[4], { modus: 'imp', numerus: 'pl' }));
+  }
+  return formen;
+}
+
+// Perfekt aktiv aus der gespeicherten 1. Sg. Perf. ("vīdī").
+function perfektAktiv(perfekt) {
+  const stamm = ohneEndung(perfekt, 'ī');
+  return [
+    ...personenFormen(stamm, PERF_AKT, 'perf', 'akt'),
+    ...personenFormen(stamm, PLQPF_AKT, 'plqpf', 'akt'),
+    ...personenFormen(stamm, FUT2_AKT, 'fut2', 'akt'),
+    verbForm(`${stamm}isse`, { modus: 'inf', tempus: 'perf', genusVerbi: 'akt' }),
+  ];
+}
+
+// Perfekt passiv (bzw. bei Deponentien das Perfekt): Partizip + esse,
+// Partizip in allen Genera ("monitus/monita/monitum est").
+function perfektMitPartizip(partizipStamm, genusVerbi) {
+  const formen = [];
+  const endungen = { sg: ['us', 'a', 'um'], pl: ['ī', 'ae', 'a'] };
+  for (const [tempus, esse] of Object.entries(ESSE)) {
+    PERSONEN.forEach(([person, numerus], i) => {
+      for (const e of endungen[numerus]) {
+        formen.push(verbForm(`${partizipStamm}${e} ${esse[i]}`,
+          { person, numerus, tempus, modus: 'ind', ...(genusVerbi ? { genusVerbi } : {}) }));
+      }
+    });
+  }
+  for (const e of ['um', 'us', 'a', 'ōs', 'ās', 'ī', 'ae']) {
+    formen.push(verbForm(`${partizipStamm}${e} esse`, { modus: 'inf', tempus: 'perf', ...(genusVerbi ? { genusVerbi } : {}) }));
+  }
+  return formen;
+}
+
+function verbFormen(vokabel) {
+  const fo = vokabel.formen || {};
+  const infinitive = varianten(vokabel.lemma);
+  if (infinitive.length !== 1 || infinitive[0].includes(' ')) return [];
+  const infinitiv = infinitive[0];
+  const formen = [];
+
+  let deponens = false;
+  for (const praesens of fo.praesens_1sg ? varianten(fo.praesens_1sg) : []) {
+    const k = konjugation(infinitiv, praesens);
+    if (!k) continue;
+    deponens = k.deponens;
+    const imperativ = fo.imperativ_sg ? varianten(fo.imperativ_sg) : null;
+    formen.push(...praesensSystem(infinitiv, k, imperativ));
+  }
+
+  for (const perfekt of fo.perfekt_1sg ? String(fo.perfekt_1sg).split('/').flatMap(varianten) : []) {
+    if (perfekt.endsWith(' sum')) {
+      // Deponens/Semideponens ("hortātus sum"): Perfekt ohne Genus verbi.
+      const partizip = ohneEndung(perfekt, ' sum');
+      if (endetAuf(partizip, 'us')) formen.push(...perfektMitPartizip(ohneEndung(partizip, 'us'), null));
+    } else if (!perfekt.includes(' ') && endetAuf(perfekt, 'i')) {
+      formen.push(...perfektAktiv(perfekt));
+    }
+  }
+
+  // Perfekt passiv aus dem PPP bzw. Supin ("monitum").
+  if (!deponens && fo.ppp) {
+    for (const ppp of varianten(fo.ppp)) {
+      if (!ppp.includes(' ') && endetAuf(ppp, 'um')) formen.push(...perfektMitPartizip(ohneEndung(ppp, 'um'), 'pass'));
+    }
+  }
+  return formen;
+}
+
 // --- Gesamt ---
 
 function ohneDoppelte(formen) {
   const gesehen = new Set();
   return formen.filter(({ form, bestimmung }) => {
-    const schluessel = `${form}|${bestimmung.kasus}|${bestimmung.numerus}|${bestimmung.genus || ''}`;
+    const schluessel = `${form}|${bestimmungText(bestimmung)}`;
     if (gesehen.has(schluessel)) return false;
     gesehen.add(schluessel);
     return true;
@@ -471,6 +654,7 @@ export function bildeFormen(vokabel) {
   let formen;
   if (vokabel.wortart === 'substantiv') formen = substantivFormen(vokabel);
   else if (vokabel.wortart === 'adjektiv') formen = adjektivFormen(vokabel);
+  else if (vokabel.wortart === 'verb') return ohneDoppelte(verbFormen(vokabel));
   else return [];
   return ohneDoppelte(mitHinweisFormen(formen, vokabel.hinweis));
 }

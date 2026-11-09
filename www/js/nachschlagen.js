@@ -5,7 +5,7 @@ import { getStore } from './store.js';
 import { feldDefinitionenFuer, abfrageLabel } from './einstellungen.js';
 import { eingabeFokussieren } from './spracheingabe.js';
 import { hatAudio, spieleAudio, stoppeAudio } from './audio.js';
-import { sucheErweitert } from './suche.js';
+import { sucheErweitert, bereiteSucheVor } from './suche.js';
 import { bestimmungenText } from './formen.js';
 
 const WORTART_TEXT = { substantiv: 'Substantiv', verb: 'Verb', adjektiv: 'Adjektiv', sonstiges: 'Sonstiges' };
@@ -188,7 +188,12 @@ export function initNachschlagen() {
     eingabe.blur();
   });
   document.addEventListener('screen-gezeigt', e => {
-    if (e.detail.id === 'nachschlagen') eingabeFokussieren(eingabe);
-    else stoppeAudio();
+    if (e.detail.id === 'nachschlagen') {
+      eingabeFokussieren(eingabe);
+      // Nach dem Anzeigen, damit der Screen nicht verzögert erscheint.
+      setTimeout(() => bereiteSucheVor(getStore().vokabeln), 50);
+    } else {
+      stoppeAudio();
+    }
   });
 }
